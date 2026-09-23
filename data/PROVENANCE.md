@@ -20,6 +20,44 @@ The accompanying paper is Nait Saada et al., _Nature Communications_ 11, 6130 (2
 
 `SHA256SUMS` covers every file in `raw/`; verify with `sha256sum -c SHA256SUMS`.
 
+## Map boundaries (`map/`)
+
+`map/uk-postcode-areas.topo.json` (sha256
+`40398d328cceeebfa55490497d27010bc26cc38ec8b26a4a2cda44d2ff08bea2`) holds the 120 Great Britain
+postcode area boundaries, derived from the GeoLytix postal boundaries published at:
+
+- **GB Postcode Area, Sector, District**, Edinburgh DataShare,
+  <https://datashare.ed.ac.uk/handle/10283/2597> (`GB_Postcodes.zip`, `PostalArea` layer, 2012)
+- **Licence:** Open Government Licence, on the same terms as OS OpenData
+
+**The licence requires this attribution wherever the map is shown:**
+
+> Postal Boundaries © GeoLytix copyright and database right 2012. Contains Ordnance Survey data
+> © Crown copyright and database right 2012. Contains Royal Mail data © Royal Mail copyright and
+> database right 2012. Contains National Statistics data © Crown copyright and database right 2012.
+
+Note that no official source of postcode *area* polygons exists. Royal Mail defines postcodes as
+delivery routes rather than areas, so ONS and Ordnance Survey publish only centroids and lookups;
+every polygon dataset is derived by a third party. GeoLytix is the established open one.
+
+Regenerated from the source shapefile with [mapshaper](https://mapshaper.org):
+
+```
+mapshaper GB_Postcodes/PostalArea.shp encoding=latin1 \
+  -filter-fields PostArea,AreaName -rename-fields code=PostArea,name=AreaName \
+  -proj from=EPSG:27700 EPSG:4326 \
+  -simplify 0.5% keep-shapes \
+  -rename-layers postcode_areas \
+  -o format=topojson id-field=code quantization=1e4 uk-postcode-areas.topo.json
+```
+
+Reprojected from British National Grid to WGS84 and simplified to 0.5%, which keeps the island
+groups legible (Shetland retains 13 parts, the Outer Hebrides 15, Scilly 3). Each shape carries
+its postcode `code` and the GeoLytix `name`, which is where the app's place names come from.
+
+The 2012 vintage suits the data, which reflects UK Biobank recruitment in 2006–2010. Coverage is
+Great Britain only, so there is no Northern Ireland (BT) shape and none for NPT.
+
 ## Relationship to the retired backend
 
 These files are **byte-identical** (verified by checksum, all 30 matrices and the postcode
