@@ -1,0 +1,48 @@
+name: Data
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/**'
+      - 'scripts/**'
+      - 'src/data/**'
+      - '.github/workflows/data.yml'
+  pull_request:
+    paths:
+      - 'data/**'
+      - 'scripts/**'
+      - 'src/data/**'
+      - '.github/workflows/data.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: '0.12.23'
+          enable-cache: false
+
+      - name: Check generated data matches its sources
+        run: uv run --locked scripts/build_data.py --check
+
+      - name: Lint data script
+        run: uvx ruff@0.16.10 check scripts
+
+      - name: Check data script formatting
+        run: uvx ruff@0.16.10 format --check scripts
