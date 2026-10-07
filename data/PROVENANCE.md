@@ -82,7 +82,7 @@ Taking the files from Zenodo instead makes this repository self-contained and ci
 
 30 matrices, each 122x122 float64 in NumPy `.npy` format, spanning:
 
-- **2 datatypes:** `matrix_nb_*` is the number of IBD segments shared, and `matrix_len_*` is the total length shared, in centimorgans.
+- **2 measures:** `matrix_nb_*` is the number of IBD segments shared, and `matrix_len_*` is the total length shared, in centimorgans.
 - **5 time thresholds:** 10, 20, 30, 40 and 50 generations.
 - **3 statistics:** `_mean`, `_lower_95` and `_upper_95`, the latter two being bounds of the 95% confidence interval.
 

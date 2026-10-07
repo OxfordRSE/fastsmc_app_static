@@ -1,6 +1,10 @@
+// Ports help_text.js from the original frontend (OxfordRSE/fastsmc_app_frontend):
+// help_dataset, help_datatype and help_mode became dataset, measure and colourRange.
+
 // One sentence per line, joined for display, so edits produce clean diffs.
 const sentences = (...lines: string[]) => lines.join(' ')
 
+/** Text for the help popovers, one entry per control. */
 export const helpText = {
   dataset: sentences(
     'Select the type of data to display on the map.',
@@ -12,7 +16,7 @@ export const helpText = {
     'Use "Show advanced" to reveal additional settings.',
   ),
 
-  datatype: sentences(
+  measure: sentences(
     'Select which measure of shared genetic ancestry to display.',
     'With "percent shared genome", the colours and numbers show the percentage of the genome that two typical individuals from the two areas share identical-by-descent, inherited from common ancestors who lived between today and the selected time threshold.',
     'This is usually a very small fraction, because little of the genome is inherited from ancestors who lived in recent centuries.',
