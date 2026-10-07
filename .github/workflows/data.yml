@@ -1,19 +1,10 @@
 name: Data
 
+# No path filters: this is a required check, and a filtered-out run never reports, blocking the PR.
 on:
   push:
     branches: [main]
-    paths:
-      - 'data/**'
-      - 'scripts/**'
-      - 'src/data/**'
-      - '.github/workflows/data.yml'
   pull_request:
-    paths:
-      - 'data/**'
-      - 'scripts/**'
-      - 'src/data/**'
-      - '.github/workflows/data.yml'
   workflow_dispatch:
 
 permissions:
