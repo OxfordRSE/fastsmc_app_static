@@ -1,10 +1,21 @@
-import genomeFractionUrl from '../data/genome_fraction.bin?url'
-import ibdSegmentsUrl from '../data/ibd_segments.bin?url'
+// Ports Data.js and the data loading in App.js from the original frontend
+// (OxfordRSE/fastsmc_app_frontend), which fetched per-postcode slices from the
+// old Flask backend (OxfordRSE/fastsmc_app_backend) instead of loading whole matrices.
+
+import ancestorsUrl from '../data/ancestors.bin?url'
+import genomeUrl from '../data/genome.bin?url'
 import meta from '../data/meta.json'
 import { at } from './arrays'
 
-/** The two measures of shared ancestry, matching the keys in `meta.json`. */
-export type Datatype = 'ibd_segments' | 'genome_fraction'
+/**
+ * The two measures of shared ancestry: the number of shared ancestors, and the
+ * percentage of the genome shared. Matches the keys in `meta.json`.
+ *
+ * @remarks
+ * Named `ibd_segments` and `genome_fraction` in the original app and backend
+ * (`display_data_options`, selected by `display_data_index` 0 and 1).
+ */
+export type Measure = 'ancestors' | 'genome'
 
 /** A statistic with its 95% confidence interval. */
 export interface Interval {
@@ -24,9 +35,9 @@ export interface Ranked {
   readonly interval: Interval
 }
 
-const urls: Readonly<Record<Datatype, string>> = {
-  ibd_segments: ibdSegmentsUrl,
-  genome_fraction: genomeFractionUrl,
+const urls: Readonly<Record<Measure, string>> = {
+  ancestors: ancestorsUrl,
+  genome: genomeUrl,
 }
 
 const thresholds = meta.thresholdsGenerations
@@ -66,17 +77,17 @@ export function generationsFromYears(years: number): number {
 }
 
 /**
- * Fetches and validates one datatype's matrix.
+ * Fetches and validates one measure's matrix.
  *
- * @param datatype - Which matrix to load.
+ * @param measure - Which matrix to load.
  * @returns The matrix values.
  * @throws `Error` if the request fails or the file has the wrong size.
  */
-export async function loadMatrix(datatype: Datatype): Promise<Float32Array> {
-  const response = await fetch(urls[datatype])
+export async function loadMatrix(measure: Measure): Promise<Float32Array> {
+  const response = await fetch(urls[measure])
   if (!response.ok) {
     throw new Error(
-      `Failed to load ${datatype}: HTTP ${String(response.status)}`,
+      `Failed to load ${measure}: HTTP ${String(response.status)}`,
     )
   }
   return toMatrix(await response.arrayBuffer())

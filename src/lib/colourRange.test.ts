@@ -24,7 +24,7 @@ describe('valueExtent', () => {
 
 describe('colourRange', () => {
   it('second largest runs from zero and skips the dominant value', () => {
-    expect(colourRange('secondLargest', values, current)).toEqual({
+    expect(colourRange('second-largest', values, current)).toEqual({
       low: 0,
       high: 59,
     })
@@ -47,11 +47,11 @@ describe('colourRange', () => {
   })
 
   it('keeps the user range when it lies within the data', () => {
-    expect(colourRange('user', values, current)).toEqual(current)
+    expect(colourRange('custom', values, current)).toEqual(current)
   })
 
   it('clamps the user range to the data', () => {
-    expect(colourRange('user', values, { low: -5, high: 500 })).toEqual({
+    expect(colourRange('custom', values, { low: -5, high: 500 })).toEqual({
       low: 1,
       high: 100,
     })
@@ -59,7 +59,7 @@ describe('colourRange', () => {
 
   it('does not depend on the order of the values', () => {
     const shuffled = values.toReversed()
-    for (const mode of ['secondLargest', 'percentiles', 'user'] as const) {
+    for (const mode of ['second-largest', 'percentiles', 'custom'] as const) {
       expect(colourRange(mode, shuffled, current)).toEqual(
         colourRange(mode, values, current),
       )
@@ -76,7 +76,7 @@ describe('colourRange', () => {
       low: 1,
       high: 2,
     })
-    expect(colourRange('secondLargest', [1, 2], current)).toEqual({
+    expect(colourRange('second-largest', [1, 2], current)).toEqual({
       low: 0,
       high: 1,
     })

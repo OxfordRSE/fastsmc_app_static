@@ -5,6 +5,8 @@
 """Convert the published IBD matrices into the files the site loads.
 
 Reads data/raw and data/map (see data/PROVENANCE.md), writes src/data.
+Replaces create_data() in fastsmc/data.py of the old Flask backend
+(OxfordRSE/fastsmc_app_backend), which did this conversion at server start-up.
 Run with `uv run scripts/build_data.py`. Outputs are committed; the inputs are
 fixed, so this only needs re-running if they change.
 
@@ -26,11 +28,13 @@ MAP = ROOT / "data" / "map" / "uk-postcode-areas.topo.json"
 OUT = ROOT / "src" / "data"
 LAYER = "postcode_areas"
 
+# The app's two measures, keyed by name, with their source file prefixes:
 # 'nb' counts IBD segments; 'len' is their total length in centimorgans.
-DATATYPES = {"ibd_segments": "nb", "genome_fraction": "len"}
+# The original app and backend called them 'ibd_segments' and 'genome_fraction'.
+MEASURES = {"ancestors": "nb", "genome": "len"}
 LABELS = {
-    "ibd_segments": "number of ancestors",
-    "genome_fraction": "percent shared genome",
+    "ancestors": "number of ancestors",
+    "genome": "percent shared genome",
 }
 THRESHOLDS = [10, 20, 30, 40, 50]  # generations
 STATS = ["lower_95", "mean", "upper_95"]
@@ -121,7 +125,7 @@ def golden_cases(matrices: dict[str, np.ndarray], names: list[str]) -> list[dict
     year_values = [300, 450, 600, 900, 1234, 1500]
 
     cases = []
-    for datatype, matrix in matrices.items():
+    for measure, matrix in matrices.items():
         for source, target in pairs:
             for years in year_values:
                 value = interpolate(
@@ -129,7 +133,7 @@ def golden_cases(matrices: dict[str, np.ndarray], names: list[str]) -> list[dict
                 )
                 cases.append(
                     {
-                        "datatype": datatype,
+                        "measure": measure,
                         "from": source,
                         "to": target,
                         "years": years,
@@ -149,13 +153,13 @@ def build_outputs() -> tuple[dict[str, bytes], str]:
     """Every file destined for src/data, as bytes, plus a one-line summary."""
     names = load_names()
     matrices = {
-        key: load_matrix(kind, to_percent=(key == "genome_fraction"))
-        for key, kind in DATATYPES.items()
+        key: load_matrix(kind, to_percent=(key == "genome"))
+        for key, kind in MEASURES.items()
     }
 
     # A postcode has data if any matrix holds a value for it.
     has_data = {
-        name: bool(np.isfinite(matrices["ibd_segments"][i]).any())
+        name: bool(np.isfinite(matrices["ancestors"][i]).any())
         for i, name in enumerate(names)
     }
 
@@ -170,9 +174,8 @@ def build_outputs() -> tuple[dict[str, bytes], str]:
         "thresholdsGenerations": THRESHOLDS,
         "stats": STATS,
         "yearsPerGeneration": YEARS_PER_GENERATION,
-        "datatypes": [
-            {"key": key, "file": f"{key}.bin", "label": LABELS[key]}
-            for key in DATATYPES
+        "measures": [
+            {"key": key, "file": f"{key}.bin", "label": LABELS[key]} for key in MEASURES
         ],
         "matrix": {
             "shape": [len(names), len(names), len(THRESHOLDS), len(STATS)],

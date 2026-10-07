@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import golden from '../data/golden.json'
 import meta from '../data/meta.json'
 import {
-  type Datatype,
+  type Measure,
   generationsFromYears,
   indexOf,
   interpolate,
@@ -14,16 +14,14 @@ import {
   usableIndices,
 } from './postcodeData'
 
-function readMatrix(datatype: Datatype): Float32Array {
-  const bytes = readFileSync(
-    new URL(`../data/${datatype}.bin`, import.meta.url),
-  )
+function readMatrix(measure: Measure): Float32Array {
+  const bytes = readFileSync(new URL(`../data/${measure}.bin`, import.meta.url))
   return toMatrix(Uint8Array.from(bytes).buffer)
 }
 
-const matrices: Record<Datatype, Float32Array> = {
-  ibd_segments: readMatrix('ibd_segments'),
-  genome_fraction: readMatrix('genome_fraction'),
+const matrices: Record<Measure, Float32Array> = {
+  ancestors: readMatrix('ancestors'),
+  genome: readMatrix('genome'),
 }
 
 function code(index: number): string {
@@ -40,11 +38,8 @@ function indexFor(postcode: string): number {
 }
 
 describe('metadata', () => {
-  it('lists the two datatypes the loader knows about', () => {
-    expect(meta.datatypes.map((d) => d.key)).toEqual([
-      'ibd_segments',
-      'genome_fraction',
-    ])
+  it('lists the two measures the loader knows about', () => {
+    expect(meta.measures.map((m) => m.key)).toEqual(['ancestors', 'genome'])
   })
 
   it('stores statistics in lower, mean, upper order', () => {
@@ -54,7 +49,7 @@ describe('metadata', () => {
 
 describe('toMatrix', () => {
   it('accepts a buffer of the expected size', () => {
-    expect(matrices.ibd_segments).toHaveLength(matrixLength)
+    expect(matrices.ancestors).toHaveLength(matrixLength)
   })
 
   it('rejects a buffer of the wrong size', () => {
@@ -106,10 +101,10 @@ describe('interpolate', () => {
 
 describe('parity with the numpy reference implementation', () => {
   it.each(golden)(
-    '$datatype $from to $to at $years years',
-    ({ datatype, from, to, years, expected }) => {
+    '$measure $from to $to at $years years',
+    ({ measure, from, to, years, expected }) => {
       const result = intervalAt(
-        matrices[datatype as Datatype],
+        matrices[measure as Measure],
         indexFor(from),
         indexFor(to),
         generationsFromYears(years),
@@ -138,21 +133,21 @@ describe('rank', () => {
   const generations = generationsFromYears(300)
 
   it('orders postcodes from most to least related', () => {
-    const means = rank(matrices.ibd_segments, indexFor('HA'), generations).map(
+    const means = rank(matrices.ancestors, indexFor('HA'), generations).map(
       (r) => r.interval.mean,
     )
     expect(means).toEqual([...means].sort((a, b) => b - a))
   })
 
   it('covers every other usable postcode', () => {
-    const ranked = rank(matrices.ibd_segments, indexFor('HA'), generations)
+    const ranked = rank(matrices.ancestors, indexFor('HA'), generations)
     expect(ranked).toHaveLength(usableIndices.length - 1)
   })
 
   it('never ranks a postcode against itself, even when it is not its own strongest link', () => {
     // At 300 years East London's strongest link is South West London, not itself,
     // so dropping the top entry (as the old app did) would wrongly drop SW.
-    const codes = rank(matrices.ibd_segments, indexFor('E'), generations).map(
+    const codes = rank(matrices.ancestors, indexFor('E'), generations).map(
       (r) => code(r.index),
     )
     expect(codes[0]).toBe('SW')
@@ -160,11 +155,9 @@ describe('rank', () => {
   })
 
   it('leaves out postcodes without data or without a map shape', () => {
-    const codes = rank(
-      matrices.genome_fraction,
-      indexFor('B'),
-      generations,
-    ).map((r) => code(r.index))
+    const codes = rank(matrices.genome, indexFor('B'), generations).map((r) =>
+      code(r.index),
+    )
     for (const missing of ['BN', 'BT', 'CR', 'NPT']) {
       expect(codes).not.toContain(missing)
     }

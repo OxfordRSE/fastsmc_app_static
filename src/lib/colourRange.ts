@@ -1,19 +1,25 @@
+// Ports set_color_range in App.js, and the colour range controls in
+// UserInterface.js, from the original frontend (OxfordRSE/fastsmc_app_frontend).
+
 import { at } from './arrays'
 
 /**
  * How the two ends of the map's colour scale are chosen.
  *
  * @remarks
- * - `secondLargest`: from zero to the second-largest value. The largest is
+ * - `second-largest`: from zero to the second-largest value. The largest is
  *   usually the selected area itself, which would otherwise wash out every other
  *   area.
  *
  * - `percentiles`: from the 5th to the 95th percentile, giving the most contrast
  *   across the middle of the distribution.
  *
- * - `user`: the user's own choice, kept as the selection changes.
+ * - `custom`: the user's own choice, kept as the selection changes.
+ *
+ * In the original app these were `color_range_mode` 0, 1 and 2, labelled
+ * "second largest", "95% percentiles" and "set by user".
  */
-export type ColourRangeMode = 'secondLargest' | 'percentiles' | 'user'
+export type ColourRangeMode = 'second-largest' | 'percentiles' | 'custom'
 
 /** The mode the map starts in, as in the original app. */
 export const defaultColourRangeMode: ColourRangeMode = 'percentiles'
@@ -56,9 +62,9 @@ export function valueExtent(values: readonly number[]): ColourRange {
  * @param mode - How to choose the ends.
  * @param values - Relatedness of the selected area to every usable area,
  *   including itself. The selected area must be included: it is usually the
- *   largest value, which `secondLargest` skips.
- * @param current - The range currently in use, kept in `user` mode.
- * @returns The new range. In `user` mode, `current` clamped to the values' extent.
+ *   largest value, which `second-largest` skips.
+ * @param current - The range currently in use, kept in `custom` mode.
+ * @returns The new range. In `custom` mode, `current` clamped to the values' extent.
  * @throws `RangeError` if there are fewer than 2 values.
  */
 export function colourRange(
@@ -69,14 +75,14 @@ export function colourRange(
   const sorted = sortedAscending(values)
   const last = sorted.length - 1
   switch (mode) {
-    case 'secondLargest':
+    case 'second-largest':
       return { low: 0, high: at(sorted, last - 1) }
     case 'percentiles':
       return {
         low: at(sorted, Math.round(sorted.length * 0.05)),
         high: at(sorted, Math.min(Math.round(sorted.length * 0.95), last)),
       }
-    case 'user': {
+    case 'custom': {
       const clamp = (value: number) =>
         Math.min(Math.max(value, at(sorted, 0)), at(sorted, last))
       return { low: clamp(current.low), high: clamp(current.high) }
