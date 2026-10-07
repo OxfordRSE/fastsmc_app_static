@@ -1,6 +1,7 @@
 import genomeFractionUrl from '../data/genome_fraction.bin?url'
 import ibdSegmentsUrl from '../data/ibd_segments.bin?url'
 import meta from '../data/meta.json'
+import { at } from './arrays'
 
 /** The two measures of shared ancestry, matching the keys in `meta.json`. */
 export type Datatype = 'ibd_segments' | 'genome_fraction'
@@ -43,15 +44,6 @@ const unmapped = new Set(meta.unmapped)
 export const usableIndices: readonly number[] = meta.postcodes.flatMap(
   (code, index) => (meta.hasData[index] && !unmapped.has(code) ? [index] : []),
 )
-
-// Fails loudly on a bad index: `undefined` would otherwise become NaN and look like missing data.
-function at(values: ArrayLike<number>, index: number): number {
-  const value = values[index]
-  if (value === undefined) {
-    throw new RangeError(`Index ${String(index)} is out of range`)
-  }
-  return value
-}
 
 /**
  * Looks up a postcode's position in the matrices.
