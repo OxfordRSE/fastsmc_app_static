@@ -43,10 +43,16 @@ GeoLytix is the established open one.
 
 ### Regenerating the map
 
-Download and unpack the archive, then run [mapshaper](https://mapshaper.org):
+The steps below reproduce the committed map byte for byte, last verified 2026-10-07.
+The [mapshaper](https://mapshaper.org) version is pinned because a different version may simplify the shapes differently.
 
 ```bash
-mapshaper GB_Postcodes/PostalArea.shp encoding=utf8 \
+curl -L -o gb_postcodes.zip "https://datashare.ed.ac.uk/download/DS_10283_2597.zip?v=8e6a0fe630ac5dffe1217d2480c3abdd"
+sha256sum gb_postcodes.zip  # ad5d4e6c4e2aa3c26c18af332336490882776b9e4e4927835cdcff5fdfd50d60
+unzip gb_postcodes.zip GB_Postcodes.zip
+unzip GB_Postcodes.zip "GB_Postcodes/PostalArea.*"
+
+npx mapshaper@0.7.80 GB_Postcodes/PostalArea.shp encoding=utf8 \
   -filter-fields PostArea,AreaName \
   -rename-fields code=PostArea,name=AreaName \
   -each 'name = name.replace(/\uFFFD/g, " ").replace(/\s+/g, " ").trim()' \
