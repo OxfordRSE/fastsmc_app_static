@@ -1,6 +1,7 @@
 // One sentence per line, joined for display, so edits produce clean diffs.
 const sentences = (...lines: string[]) => lines.join(' ')
 
+/** Text for the help popovers, one entry per control. */
 export const helpText = {
   dataset: sentences(
     'Select the type of data to display on the map.',
