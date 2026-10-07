@@ -200,6 +200,31 @@ export function intervalAt(
 }
 
 /**
+ * The mean relatedness of one postcode to every usable postcode.
+ *
+ * @remarks
+ * Unlike {@link rank}, this includes the postcode itself, which the colour
+ * range needs.
+ *
+ * @param values - A complete matrix.
+ * @param from - Matrix index of the postcode.
+ * @param generations - Time depth in generations.
+ * @returns Mean relatedness, keyed by matrix index, for every usable postcode.
+ */
+export function relatedness(
+  values: Float32Array,
+  from: number,
+  generations: number,
+): ReadonlyMap<number, number> {
+  const means = new Map<number, number>()
+  for (const index of usableIndices) {
+    const interval = intervalAt(values, from, index, generations)
+    if (interval) means.set(index, interval.mean)
+  }
+  return means
+}
+
+/**
  * Ranks every other usable postcode by its relatedness to one postcode.
  *
  * @remarks

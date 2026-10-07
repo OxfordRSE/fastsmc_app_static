@@ -1,4 +1,5 @@
-import { afterEach, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { page } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import App from './App'
 import { en } from './content/en'
@@ -59,4 +60,34 @@ it.each([
     .toBeVisible()
   expect(window.location.pathname).toBe(pathname)
   expect(window.location.search).toBe(after)
+})
+
+describe('the map', () => {
+  async function renderApp() {
+    const screen = await render(<App />)
+    const area = (code: string) => {
+      const element = screen.container.querySelector(`[data-code="${code}"]`)
+      if (!element) throw new Error(`No area ${code}`)
+      return page.elementLocator(element)
+    }
+    await expect
+      .element(screen.getByRole('heading', { name: en.appTitle }))
+      .toBeVisible()
+    await expect.element(area('B')).toHaveAttribute('d')
+    return area
+  }
+
+  it('selects the clicked area and records it in the address bar', async () => {
+    const area = await renderApp()
+    await area('B').click()
+    await expect.poll(() => window.location.search).toBe('?postcode=B')
+  })
+
+  it('keeps the selection when an area without data is clicked', async () => {
+    const area = await renderApp()
+    await area('B').click()
+    await expect.poll(() => window.location.search).toBe('?postcode=B')
+    await area('CR').click()
+    expect(window.location.search).toBe('?postcode=B')
+  })
 })

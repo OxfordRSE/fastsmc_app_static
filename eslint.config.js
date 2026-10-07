@@ -55,6 +55,9 @@ export default defineConfig([
       'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
       'jsdoc/tag-lines': ['error', 'any', { startLines: 1 }],
       'jsdoc/require-throws-type': 'off',
+      // Component props are documented once, on their interface, not per field again.
+      'jsdoc/require-param': ['error', { checkDestructured: false }],
+      'jsdoc/check-param-names': ['error', { checkDestructured: false }],
     },
   },
   {
