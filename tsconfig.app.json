@@ -25,5 +25,6 @@
     "noImplicitReturns": true,
     "noImplicitOverride": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
 }
