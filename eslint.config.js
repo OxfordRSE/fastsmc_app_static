@@ -7,6 +7,12 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
+// Attributes whose values are shown or read aloud, so must come from the copy module.
+const textAttributes =
+  'alt|aria-label|aria-description|aria-placeholder|aria-roledescription|aria-valuetext|helperText|label|placeholder|text|title'
+const useCopyInstead =
+  'User-visible text belongs in src/content/en.ts; read it with useCopy().'
+
 export default defineConfig([
   globalIgnores(['dist']),
   {
@@ -49,6 +55,30 @@ export default defineConfig([
       'jsdoc/require-hyphen-before-param-description': ['error', 'always'],
       'jsdoc/tag-lines': ['error', 'any', { startLines: 1 }],
       'jsdoc/require-throws-type': 'off',
+    },
+  },
+  {
+    // No text written inline in components: it all lives in src/content/en.ts.
+    files: ['src/**/*.tsx'],
+    ignores: ['src/**/*.test.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        { selector: 'JSXText[value=/\\S/]', message: useCopyInstead },
+        {
+          selector:
+            ':matches(JSXElement, JSXFragment) > JSXExpressionContainer > :matches(Literal[value=/\\S/], TemplateLiteral)',
+          message: useCopyInstead,
+        },
+        {
+          selector: `JSXAttribute[name.name=/^(${textAttributes})$/] > Literal`,
+          message: useCopyInstead,
+        },
+        {
+          selector: `JSXAttribute[name.name=/^(${textAttributes})$/] > JSXExpressionContainer > :matches(Literal, TemplateLiteral)`,
+          message: useCopyInstead,
+        },
+      ],
     },
   },
   {

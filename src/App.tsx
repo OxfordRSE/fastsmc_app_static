@@ -1,8 +1,11 @@
+import { useCopy } from './content/useCopy'
+
 /**
  * The root component.
  *
  * @returns The whole app.
  */
 export default function App() {
-  return <h1>UK Ancestry Map</h1>
+  const copy = useCopy()
+  return <h1>{copy.appTitle}</h1>
 }
