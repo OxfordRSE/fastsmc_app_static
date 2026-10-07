@@ -22,7 +22,7 @@ import { at } from './arrays'
 export type ColourRangeMode = 'second-largest' | 'percentiles' | 'custom'
 
 /** The mode the map starts in, as in the original app. */
-export const defaultColourRangeMode: ColourRangeMode = 'percentiles'
+export const defaultColourRangeMode = 'percentiles' satisfies ColourRangeMode
 
 /** The values mapped to the lightest and darkest colours. */
 export interface ColourRange {

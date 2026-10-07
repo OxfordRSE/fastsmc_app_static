@@ -66,6 +66,12 @@ export function indexOf(code: string): number | undefined {
   return indexByCode.get(code)
 }
 
+/** The shortest and longest time depths the data covers, in years: the slider's limits. */
+export const yearsExtent = {
+  min: at(thresholds, 0) * meta.yearsPerGeneration,
+  max: at(thresholds, thresholds.length - 1) * meta.yearsPerGeneration,
+} as const
+
 /**
  * Converts a time depth in years to generations.
  *
