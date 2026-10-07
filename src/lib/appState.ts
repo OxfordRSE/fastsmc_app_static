@@ -3,13 +3,9 @@
 // mouseover_postcode_index, display_data_index, display_timespan, color_range
 // and color_range_mode. display_pop_index is gone with the dataset selector.
 
+import type { RangeSetting } from './colourRange'
 import { type Measure, isUsable, yearsExtent } from './postcodeData'
-import {
-  type RangeSetting,
-  type ViewState,
-  defaultViewState,
-  parseViewState,
-} from './urlState'
+import { type ViewState, defaultViewState, parseViewState } from './urlState'
 
 /** Everything the app tracks: what the URL records, plus the hovered area. */
 export interface AppState {
