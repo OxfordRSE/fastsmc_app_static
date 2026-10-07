@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - '.github/**'
+  # Unfiltered on PRs: this is a required check, and a filtered-out run never reports.
+  pull_request:
   schedule:
     - cron: '15 3 * * 1' # Every Monday at 03:15 UTC
   workflow_dispatch:
@@ -33,7 +35,9 @@ jobs:
           persist-credentials: false
 
       # Inputs are .github rather than .github/workflows so dependabot.yml is audited too.
+      # No upload on PRs: Dependabot's PRs get a read-only token. The next step gates PRs.
       - name: Run zizmor (upload to code scanning)
+        if: github.event_name != 'pull_request'
         uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
         with:
           inputs: .github
