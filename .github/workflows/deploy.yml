@@ -33,7 +33,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Unit tests
+      - name: Install Chromium for component tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Tests
         run: npm test
 
       - name: Setup Pages

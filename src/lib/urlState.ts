@@ -5,21 +5,8 @@
 // color_range (two numbers) and color_range_mode (0 second largest,
 // 1 percentiles, 2 set by user). Old links are deliberately not supported.
 
-import meta from '../data/meta.json'
-import { at } from './arrays'
-import { defaultColourRangeMode } from './colourRange'
-import { type Measure, usableIndices, yearsExtent } from './postcodeData'
-
-/** The colour range setting: an automatic mode, or a custom range. */
-export type RangeSetting =
-  | { readonly mode: 'percentiles' | 'second-largest' }
-  | {
-      readonly mode: 'custom'
-      /** Value shown in the lightest colour. */
-      readonly low: number
-      /** Value shown in the darkest colour. */
-      readonly high: number
-    }
+import { type RangeSetting, defaultColourRangeMode } from './colourRange'
+import { type Measure, isUsable, yearsExtent } from './postcodeData'
 
 /** The parts of the view that a URL records. */
 export interface ViewState {
@@ -41,17 +28,12 @@ export const defaultViewState: ViewState = {
   range: { mode: defaultColourRangeMode },
 }
 
-const usableCodes = new Set(
-  usableIndices.map((index) => at(meta.postcodes, index)),
-)
 const measures: readonly Measure[] = ['ancestors', 'genome']
 const wholeNumber = /^\d+$/
 
 function parsePostcode(text: string | null): string {
   const code = text?.toUpperCase()
-  return code !== undefined && usableCodes.has(code)
-    ? code
-    : defaultViewState.postcode
+  return code !== undefined && isUsable(code) ? code : defaultViewState.postcode
 }
 
 function parseMeasure(text: string | null): Measure {

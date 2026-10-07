@@ -10,6 +10,7 @@ import {
   intervalAt,
   matrixLength,
   rank,
+  relatedness,
   toMatrix,
   usableIndices,
 } from './postcodeData'
@@ -126,6 +127,24 @@ describe('usableIndices', () => {
       (_, index) => !usableIndices.includes(index),
     )
     expect(excluded.sort()).toEqual(['BN', 'BT', 'CR', 'NPT'])
+  })
+})
+
+describe('relatedness', () => {
+  const generations = generationsFromYears(300)
+
+  it('covers every usable postcode, including the selected one', () => {
+    const values = relatedness(matrices.ancestors, indexFor('HA'), generations)
+    expect([...values.keys()]).toEqual(usableIndices)
+  })
+
+  it('gives the mean of each interval', () => {
+    const from = indexFor('HA')
+    const to = indexFor('LL')
+    const values = relatedness(matrices.genome, from, generations)
+    expect(values.get(to)).toBe(
+      intervalAt(matrices.genome, from, to, generations)?.mean,
+    )
   })
 })
 

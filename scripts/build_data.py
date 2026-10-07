@@ -32,10 +32,6 @@ LAYER = "postcode_areas"
 # 'nb' counts IBD segments; 'len' is their total length in centimorgans.
 # The original app and backend called them 'ibd_segments' and 'genome_fraction'.
 MEASURES = {"ancestors": "nb", "genome": "len"}
-LABELS = {
-    "ancestors": "number of ancestors",
-    "genome": "percent shared genome",
-}
 THRESHOLDS = [10, 20, 30, 40, 50]  # generations
 STATS = ["lower_95", "mean", "upper_95"]
 YEARS_PER_GENERATION = 30
@@ -174,9 +170,7 @@ def build_outputs() -> tuple[dict[str, bytes], str]:
         "thresholdsGenerations": THRESHOLDS,
         "stats": STATS,
         "yearsPerGeneration": YEARS_PER_GENERATION,
-        "measures": [
-            {"key": key, "file": f"{key}.bin", "label": LABELS[key]} for key in MEASURES
-        ],
+        "measures": [{"key": key, "file": f"{key}.bin"} for key in MEASURES],
         "matrix": {
             "shape": [len(names), len(names), len(THRESHOLDS), len(STATS)],
             "dtype": "float32",

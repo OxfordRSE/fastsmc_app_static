@@ -1,0 +1,32 @@
+// Replaces the map data handling in App.js of the original frontend
+// (OxfordRSE/fastsmc_app_frontend): its uk-postcode-area.json and
+// calculate_index_mapping give way to the GeoLytix boundaries, where each shape
+// already carries its matrix index.
+
+import type { FeatureCollection, Geometry } from 'geojson'
+import { feature } from 'topojson-client'
+import type { GeometryCollection, Topology } from 'topojson-specification'
+import topology from '../data/uk-postcode-areas.topo.json'
+
+/** What each map shape carries besides its outline. */
+export interface AreaProperties {
+  /** Postcode area code, such as `HA`. */
+  readonly code: string
+  /** Place name, such as `Harrow`. */
+  readonly name: string
+  /** The area's row and column in the matrices. */
+  readonly matrixIndex: number
+  /** Whether the matrices hold data for the area. */
+  readonly hasData: boolean
+}
+
+type PostcodeTopology = Topology<{
+  postcode_areas: GeometryCollection<AreaProperties>
+}>
+
+// JSON imports widen literal fields such as "type": "Topology" to string.
+const postcodeTopology = topology as unknown as PostcodeTopology
+
+/** Every postcode area on the map, as GeoJSON features. */
+export const postcodeAreas: FeatureCollection<Geometry, AreaProperties> =
+  feature(postcodeTopology, postcodeTopology.objects.postcode_areas)

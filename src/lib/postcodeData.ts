@@ -56,6 +56,20 @@ export const usableIndices: readonly number[] = meta.postcodes.flatMap(
   (code, index) => (meta.hasData[index] && !unmapped.has(code) ? [index] : []),
 )
 
+const usableCodes = new Set(
+  usableIndices.map((index) => at(meta.postcodes, index)),
+)
+
+/**
+ * Whether the app shows a postcode: it has data and a shape on the map.
+ *
+ * @param code - Postcode area code, such as `HA`.
+ * @returns `true` if the postcode can be selected and ranked.
+ */
+export function isUsable(code: string): boolean {
+  return usableCodes.has(code)
+}
+
 /**
  * Looks up a postcode's position in the matrices.
  *
@@ -183,6 +197,31 @@ export function intervalAt(
   generations: number,
 ): Interval | null {
   return interpolate(pairOf(values, from, to), generations)
+}
+
+/**
+ * The mean relatedness of one postcode to every usable postcode.
+ *
+ * @remarks
+ * Unlike {@link rank}, this includes the postcode itself, which the colour
+ * range needs.
+ *
+ * @param values - A complete matrix.
+ * @param from - Matrix index of the postcode.
+ * @param generations - Time depth in generations.
+ * @returns Mean relatedness, keyed by matrix index, for every usable postcode.
+ */
+export function relatedness(
+  values: Float32Array,
+  from: number,
+  generations: number,
+): ReadonlyMap<number, number> {
+  const means = new Map<number, number>()
+  for (const index of usableIndices) {
+    const interval = intervalAt(values, from, index, generations)
+    if (interval) means.set(index, interval.mean)
+  }
+  return means
 }
 
 /**
