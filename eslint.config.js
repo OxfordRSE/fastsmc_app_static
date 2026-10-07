@@ -29,7 +29,7 @@ export default defineConfig([
   {
     // TSDoc on every export of the app's source; tests are documented by their names.
     files: ['src/**/*.{ts,tsx}'],
-    ignores: ['src/**/*.test.ts'],
+    ignores: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     extends: [jsdoc.configs['flat/recommended-typescript-error']],
     rules: {
       'jsdoc/require-jsdoc': [

@@ -159,5 +159,8 @@ dist-ssr
 *.sln
 *.sw?
 
+# Vitest browser mode artefacts, such as screenshots of failed tests
+.vitest/
+
 # Local planning notes (reference only, not committed)
 PLAN.md
