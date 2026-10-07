@@ -12,14 +12,19 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   zizmor:
+    name: zizmor
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
-      security-events: write
-      actions: read
+      security-events: write # upload results to code scanning
+      actions: read # the code scanning upload reads workflow run details
 
     steps:
       - name: Checkout repository
