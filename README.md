@@ -52,6 +52,14 @@ uv run scripts/build_data.py --check
 
 It exits non-zero if any file is missing, out of date or unexpected.
 
+The script's dependencies are declared at its top and pinned exactly in `scripts/build_data.py.lock`, so regenerating always uses the same numpy.
+After changing the declared dependencies, or to deliberately upgrade them, refresh the lock:
+
+```bash
+uv lock --script scripts/build_data.py            # after editing the declared dependencies
+uv lock --script scripts/build_data.py --upgrade  # to move to the newest allowed versions
+```
+
 ## Licence
 
 GPL-3.0, see `LICENSE`.
