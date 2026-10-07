@@ -8,10 +8,14 @@
 Reads data/raw and data/map (see data/PROVENANCE.md), writes src/data.
 Run with `uv run scripts/build_data.py`. Outputs are committed; the inputs are
 fixed, so this only needs re-running if they change.
+
+With --check, writes nothing and exits non-zero unless the committed src/data
+matches what the inputs produce, byte for byte.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 
@@ -138,7 +142,12 @@ def golden_cases(matrices: dict[str, np.ndarray], names: list[str]) -> list[dict
     return cases
 
 
-def main() -> None:
+def to_json(payload: object) -> bytes:
+    return json.dumps(payload, separators=(",", ":"), allow_nan=False).encode()
+
+
+def build_outputs() -> tuple[dict[str, bytes], str]:
+    """Every file destined for src/data, as bytes, plus a one-line summary."""
     names = load_names()
     matrices = {
         key: load_matrix(kind, to_percent=(key == "genome_fraction"))
@@ -163,7 +172,8 @@ def main() -> None:
         "stats": STATS,
         "yearsPerGeneration": YEARS_PER_GENERATION,
         "datatypes": [
-            {"key": key, "file": f"{key}.bin", "label": LABELS[key]} for key in DATATYPES
+            {"key": key, "file": f"{key}.bin", "label": LABELS[key]}
+            for key in DATATYPES
         ],
         "matrix": {
             "shape": [len(names), len(names), len(THRESHOLDS), len(STATS)],
@@ -174,26 +184,70 @@ def main() -> None:
         "source": {"doi": "10.5281/zenodo.4012677", "licence": "CC-BY-4.0"},
     }
 
-    OUT.mkdir(parents=True, exist_ok=True)
-    for key, matrix in matrices.items():
-        path = OUT / f"{key}.bin"
-        path.write_bytes(matrix.astype("<f4").tobytes())
-        print(f"{path.relative_to(ROOT)}: {path.stat().st_size:,} bytes")
-
-    for name, payload in [
-        ("meta.json", meta),
-        ("uk-postcode-areas.topo.json", topology),
-        ("golden.json", golden_cases(matrices, names)),
-    ]:
-        path = OUT / name
-        path.write_text(json.dumps(payload, separators=(",", ":"), allow_nan=False))
-        print(f"{path.relative_to(ROOT)}: {path.stat().st_size:,} bytes")
+    files = {
+        f"{key}.bin": matrix.astype("<f4").tobytes() for key, matrix in matrices.items()
+    }
+    files |= {
+        "meta.json": to_json(meta),
+        "uk-postcode-areas.topo.json": to_json(topology),
+        "golden.json": to_json(golden_cases(matrices, names)),
+    }
 
     missing = [name for name in names if not has_data[name]]
-    print(
-        f"\n{len(names)} matrix rows, {len(codes)} map shapes; "
+    summary = (
+        f"{len(names)} matrix rows, {len(codes)} map shapes; "
         f"no data for {', '.join(missing)}; not on the map: {', '.join(unmapped)}"
     )
+    return files, summary
+
+
+def write(files: dict[str, bytes]) -> None:
+    OUT.mkdir(parents=True, exist_ok=True)
+    for name, content in files.items():
+        path = OUT / name
+        path.write_bytes(content)
+        print(f"{path.relative_to(ROOT)}: {len(content):,} bytes")
+
+
+def check(files: dict[str, bytes]) -> int:
+    """Compare against the committed outputs; return a process exit code."""
+    problems = []
+    for name, content in files.items():
+        path = OUT / name
+        if not path.exists():
+            problems.append(f"missing:     {path.relative_to(ROOT)}")
+        elif path.read_bytes() != content:
+            problems.append(f"out of date: {path.relative_to(ROOT)}")
+    if OUT.exists():
+        for path in sorted(OUT.iterdir()):
+            if path.name not in files:
+                problems.append(f"unexpected:  {path.relative_to(ROOT)}")
+
+    if problems:
+        print("\n".join(problems))
+        print(
+            "Run `uv run scripts/build_data.py` to regenerate, "
+            "and delete any unexpected files: src/data holds only generated output."
+        )
+        return 1
+    print(f"src/data is up to date ({len(files)} files).")
+    return 0
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="verify src/data matches the inputs instead of writing it",
+    )
+    args = parser.parse_args()
+
+    files, summary = build_outputs()
+    if args.check:
+        raise SystemExit(check(files))
+    write(files)
+    print(f"\n{summary}")
 
 
 if __name__ == "__main__":

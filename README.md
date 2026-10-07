@@ -44,6 +44,14 @@ They only need regenerating if the source data changes:
 uv run scripts/build_data.py
 ```
 
+To confirm the committed files match their sources without writing anything:
+
+```bash
+uv run scripts/build_data.py --check
+```
+
+It exits non-zero if any file is missing, out of date or unexpected.
+
 ## Licence
 
 GPL-3.0, see `LICENSE`.
