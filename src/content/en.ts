@@ -14,6 +14,10 @@
 export interface Copy {
   /** The app's name: the page title and main heading. */
   readonly appTitle: string
+  /** Shown while the data downloads. */
+  readonly loading: string
+  /** Shown if the data cannot be downloaded. */
+  readonly loadError: string
   /** Names of the two measures, as offered in the measure selector. */
   readonly measures: {
     readonly ancestors: string
@@ -42,6 +46,9 @@ const sentences = (...lines: string[]) => lines.join(' ')
 /** English text. */
 export const en: Copy = {
   appTitle: 'UK Ancestry Map',
+  loading: 'Loading the map...',
+  loadError:
+    'The map data could not be loaded. Please check your connection and reload the page.',
 
   measures: {
     ancestors: 'number of ancestors',
