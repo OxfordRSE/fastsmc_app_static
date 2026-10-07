@@ -10,6 +10,9 @@ All of its data is precomputed and bundled, so there is no backend.
 Node 24, which is pinned in `.nvmrc`.
 Run `nvm use` in this directory to select it.
 
+Regenerating the data additionally needs [uv](https://docs.astral.sh/uv/) 0.12.23 or newer.
+uv installs the pinned Python, 3.14.8 from `.python-version`, automatically.
+
 ## Getting started
 
 ```bash

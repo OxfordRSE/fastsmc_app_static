@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # /// script
-# requires-python = ">=3.12"
+# requires-python = ">=3.14"
 # dependencies = ["numpy>=2,<3"]
 # ///
 """Convert the published IBD matrices into the files the site loads.
