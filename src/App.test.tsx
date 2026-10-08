@@ -219,12 +219,7 @@ describe('the details panel', () => {
     await area('B').hover()
     await expect
       .element(
-        screen.getByText(
-          en.details.between(
-            en.controls.area('Harrow', 'HA'),
-            en.controls.area('Birmingham', 'B'),
-          ),
-        ),
+        screen.getByText(/^Birmingham \(B\): .+ of Harrow's link with itself/),
       )
       .toBeVisible()
   })

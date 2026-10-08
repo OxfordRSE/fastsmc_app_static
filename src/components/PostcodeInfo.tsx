@@ -1,11 +1,17 @@
 // Ports PostcodeInfo.js from the original frontend (OxfordRSE/fastsmc_app_frontend):
-// the selected area's name, its relatedness to itself and to the area under the
-// pointer, and the chart of its most related areas. Areas without data now say
-// so, where the original showed 0.0.
+// the selected area's name, its links with other areas, and the chart of its
+// most related areas. Links are now percentages of the selected area's link
+// with itself, with ranks, rather than raw values; areas without data say so,
+// where the original showed 0.0.
 
 import { useId } from 'react'
 import { useCopy } from '../content/useCopy'
-import { type Interval, indexOf, intervalAt, rank } from '../lib/postcodeData'
+import {
+  indexOf,
+  intervalAt,
+  rank,
+  relativeInterval,
+} from '../lib/postcodeData'
 import { areasByCode, areasByIndex } from '../lib/postcodeMap'
 import { hoveredColour, selectedColour } from './palette'
 import { type ChartEntry, TopPostcodesChart } from './TopPostcodesChart'
@@ -58,21 +64,47 @@ export function PostcodeInfo({
     const area = areasByCode.get(code)
     return area ? copy.controls.area(area.name, code) : code
   }
-  const describe = (interval: Interval | null) =>
-    interval
-      ? copy.details.estimate(interval.mean, interval.lower, interval.upper)
-      : copy.details.noData
-
   const selectedLabel = labelOf(selected)
+  const selectedName = areasByCode.get(selected)?.name ?? selected
+
+  const own = intervalAt(values, from, from, generations)?.mean
+  if (own === undefined || !(own > 0)) {
+    throw new RangeError(`No relatedness of ${selected} to itself`)
+  }
+  const percentOf = (mean: number) => copy.percent((100 * mean) / own)
+
+  const ranked = rank(values, from, generations)
+  const top = ranked[0]
+  const topArea = top && areasByIndex.get(top.index)
+
   const hoveredIndex =
     hovered === null || hovered === selected ? undefined : indexOf(hovered)
+  const hoveredLine = (() => {
+    if (hovered === null || hoveredIndex === undefined) return null
+    const interval = intervalAt(values, from, hoveredIndex, generations)
+    if (!interval) return copy.details.hoveredNoData(labelOf(hovered))
+    const position = ranked.findIndex((entry) => entry.index === hoveredIndex)
+    return copy.details.hoveredLink(
+      selectedName,
+      labelOf(hovered),
+      percentOf(interval.mean),
+      position + 1,
+      ranked.length,
+    )
+  })()
 
-  const entries: ChartEntry[] = rank(values, from, generations)
+  const entries: ChartEntry[] = ranked
     .slice(0, chartLength)
     .flatMap(({ index, interval }) => {
       const area = areasByIndex.get(index)
       return area
-        ? [{ code: area.code, label: labelOf(area.code), interval }]
+        ? [
+            {
+              code: area.code,
+              label: labelOf(area.code),
+              interval: relativeInterval(interval, own),
+            },
+          ]
         : []
     })
 
@@ -85,31 +117,32 @@ export function PostcodeInfo({
         <Swatch colour={selectedColour} />
         {selectedLabel}
       </h2>
-      <dl className="flex flex-col gap-2 text-sm">
-        <div>
-          <dt className="font-medium">{copy.details.within(selectedLabel)}</dt>
-          <dd className="text-muted-foreground tabular-nums">
-            {describe(intervalAt(values, from, from, generations))}
-          </dd>
-        </div>
-        {hovered !== null && hoveredIndex !== undefined && (
-          <div>
-            <dt className="flex items-center gap-2 font-medium">
-              <Swatch colour={hoveredColour} />
-              {copy.details.between(selectedLabel, labelOf(hovered))}
-            </dt>
-            <dd className="text-muted-foreground tabular-nums">
-              {describe(intervalAt(values, from, hoveredIndex, generations))}
-            </dd>
-          </div>
+      {/* Heights reserved in lines of text, so the chart below never moves. */}
+      <p className="min-h-[2lh] text-sm">
+        {top &&
+          topArea &&
+          copy.details.topLink(
+            selectedName,
+            labelOf(topArea.code),
+            percentOf(top.interval.mean),
+          )}
+      </p>
+      <div className="min-h-[3lh] text-sm">
+        {hoveredLine === null ? (
+          <p className="text-muted-foreground">{copy.details.hoverPrompt}</p>
+        ) : (
+          <p className="flex items-baseline gap-2">
+            <Swatch colour={hoveredColour} />
+            <span>{hoveredLine}</span>
+          </p>
         )}
-      </dl>
-      {hoveredIndex === undefined && (
-        <p className="text-sm text-muted-foreground">
-          {copy.details.hoverPrompt}
+      </div>
+      <div>
+        <h3 className="text-sm font-medium">{copy.details.topAreas}</h3>
+        <p className="text-xs text-muted-foreground">
+          {copy.details.chartUnit(selectedName)}
         </p>
-      )}
-      <h3 className="text-sm font-medium">{copy.details.topAreas}</h3>
+      </div>
       <TopPostcodesChart
         entries={entries}
         hovered={hovered}

@@ -25,6 +25,8 @@ export interface Copy {
   readonly loadError: string
   /** A percentage, such as "46%", given as a number of percent, such as 46. */
   readonly percent: (value: number) => string
+  /** A percentage on a chart axis, with a set number of decimals. */
+  readonly percentTick: (value: number, fractionDigits: number) => string
   /** Names of the two measures, as offered in the measure selector. */
   readonly measures: {
     readonly ancestors: string
@@ -85,22 +87,48 @@ export interface Copy {
   }
   /** The details box below the controls. */
   readonly details: {
-    /** Labels the relatedness of the selected area to itself. */
-    readonly within: (area: string) => string
-    /** Labels the relatedness of the selected area to the area under the pointer. */
-    readonly between: (selected: string, hovered: string) => string
+    /**
+     * The selected area's strongest link with another area.
+     *
+     * @param selected - The selected area's place name, such as "Birmingham".
+     * @param other - The other area's name and code, such as "Walsall (WS)".
+     * @param percent - The link as a percentage of the selected area's link with itself.
+     */
+    readonly topLink: (
+      selected: string,
+      other: string,
+      percent: string,
+    ) => string
+    /**
+     * The link with the area under the pointer.
+     *
+     * @param selected - The selected area's place name.
+     * @param other - The hovered area's name and code.
+     * @param percent - The link as a percentage of the selected area's link with itself.
+     * @param rank - Its rank among the other areas, 1 for the most related.
+     * @param of - How many other areas there are.
+     */
+    readonly hoveredLink: (
+      selected: string,
+      other: string,
+      percent: string,
+      rank: number,
+      of: number,
+    ) => string
+    /** Shown for a hovered area without data, given its name and code. */
+    readonly hoveredNoData: (other: string) => string
     /** Shown until the pointer has been over an area. */
     readonly hoverPrompt: string
-    /** Shown in place of a value for an area without data. */
-    readonly noData: string
     /** A value with its 95% interval. */
     readonly estimate: (mean: number, lower: number, upper: number) => string
     /** Heading of the chart. */
     readonly topAreas: string
+    /** States the unit of the chart, given the selected area's place name. */
+    readonly chartUnit: (selected: string) => string
     /** Describes the chart for screen readers. */
     readonly chartLabel: (area: string) => string
     /** One bar of the chart, for screen readers. */
-    readonly chartEntry: (area: string, estimate: string) => string
+    readonly chartEntry: (area: string, percent: string) => string
   }
   /** The information dialog. */
   readonly info: {
@@ -159,12 +187,29 @@ const sentences = (...lines: string[]) => lines.join(' ')
 // Relatedness values span several orders of magnitude, so show 2 significant figures.
 const value = new Intl.NumberFormat('en-GB', { maximumSignificantDigits: 2 })
 const years = new Intl.NumberFormat('en-GB')
-// Percentages of the selected area's link with itself, to the nearest 1%.
+// Percentages of the selected area's link with itself, to the nearest 1%; a
+// small but non-zero value reads "<1%" rather than a misleading "0%".
 const percent = new Intl.NumberFormat('en-GB', {
   style: 'percent',
   maximumFractionDigits: 0,
 })
-const asPercent = (value: number) => percent.format(value / 100)
+const asPercent = (value: number) =>
+  value > 0 && value < 0.5
+    ? `<${percent.format(0.01)}`
+    : percent.format(value / 100)
+// Axis ticks, with as many decimals as their spacing needs.
+const asTickPercent = (value: number, fractionDigits: number) =>
+  new Intl.NumberFormat('en-GB', {
+    style: 'percent',
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(value / 100)
+// 1st, 2nd, 3rd, 4th, 11th, 21st and so on.
+const ordinalRules = new Intl.PluralRules('en-GB', { type: 'ordinal' })
+const ordinalSuffixes: Readonly<Partial<Record<Intl.LDMLPluralRule, string>>> =
+  { one: 'st', two: 'nd', few: 'rd' }
+const ordinal = (n: number) =>
+  `${String(n)}${ordinalSuffixes[ordinalRules.select(n)] ?? 'th'}`
 
 /** English text. */
 export const en: Copy = {
@@ -173,6 +218,7 @@ export const en: Copy = {
   loadError:
     'The map data could not be loaded. Please check your connection and reload the page.',
   percent: asPercent,
+  percentTick: asTickPercent,
 
   measures: {
     ancestors: 'number of ancestors',
@@ -212,17 +258,21 @@ export const en: Copy = {
   },
 
   details: {
-    within: (area) => `Within ${area}`,
-    between: (selected, hovered) => `Between ${selected} and ${hovered}`,
+    topLink: (selected, other, share) =>
+      `Most related: ${other}, at ${share} of ${selected}'s link with itself.`,
+    hoveredLink: (selected, other, share, rank, of) =>
+      `${other}: ${share} of ${selected}'s link with itself, the ${ordinal(rank)} most related of ${String(of)}.`,
+    hoveredNoData: (other) => `${other}: no data.`,
     hoverPrompt:
       'Point at an area on the map, or a bar in the chart, to compare it with the selected area.',
-    noData: 'no data',
     estimate: (mean, lower, upper) =>
       `${value.format(mean)} (95% interval ${value.format(lower)} to ${value.format(upper)})`,
     topAreas: 'Top 10 most related areas',
+    chartUnit: (selected) =>
+      `As a percentage of ${selected}'s link with itself.`,
     chartLabel: (area) =>
-      `Bar chart of the 10 areas most related to ${area}, with 95% intervals`,
-    chartEntry: (area, estimate) => `${area}: ${estimate}`,
+      `Bar chart of the 10 areas most related to ${area}, with error bars`,
+    chartEntry: (area, share) => `${area}: ${share}`,
   },
 
   info: {
@@ -270,10 +320,11 @@ export const en: Copy = {
   help: {
     measure: sentences(
       'Select which measure of shared genetic ancestry to display.',
-      'With "percent shared genome", the colours and numbers show the percentage of the genome that two typical individuals from the two areas share identical-by-descent, inherited from common ancestors who lived between today and the selected time threshold.',
+      '"Percent shared genome" measures the percentage of the genome that two typical individuals from the two areas share identical-by-descent, inherited from common ancestors who lived between today and the selected time threshold.',
       'This is usually a very small fraction, because little of the genome is inherited from ancestors who lived in recent centuries.',
-      'With "number of ancestors", the map shows how many genetic ancestors two typical individuals from the two areas share on average over the same period.',
+      '"Number of ancestors" measures how many genetic ancestors two typical individuals from the two areas share on average over the same period.',
       'These numbers are also usually small.',
+      "The map and the panel show each area's link as a percentage of the selected area's link with itself, which is usually the strongest.",
     ),
 
     colourRange: sentences(
