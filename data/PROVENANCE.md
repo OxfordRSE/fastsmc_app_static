@@ -26,7 +26,7 @@ cd data/raw && sha256sum -c SHA256SUMS
 
 ## Map boundaries (`map/`)
 
-`map/uk-postcode-areas.topo.json` holds the 120 Great Britain postcode area boundaries, sha256 `3d44ff09b255fc10afd1fa7a81ec68bd384c7a560913c6c6967c7e244a073fd4`.
+`map/uk-postcode-areas.topo.json` holds the 120 Great Britain postcode area boundaries, sha256 `9410252de5df3f2820ec6ebadda9d18cc2968654923ddbfd36b7f6ee310202c2`.
 It is derived from the GeoLytix postal boundaries published as **GB Postcode Area, Sector, District** at <https://datashare.ed.ac.uk/handle/10283/2597>, using the `PostalArea` layer of `GB_Postcodes.zip` (2012).
 The licence is the Open Government Licence, on the same terms as OS OpenData.
 
@@ -43,7 +43,7 @@ GeoLytix is the established open one.
 
 ### Regenerating the map
 
-The steps below reproduce the committed map byte for byte, last verified 2026-10-07.
+The steps below reproduce the committed map byte for byte, last verified 2026-10-08.
 The [mapshaper](https://mapshaper.org) version is pinned because a different version may simplify the shapes differently.
 
 ```bash
@@ -56,13 +56,19 @@ npx mapshaper@0.7.80 GB_Postcodes/PostalArea.shp encoding=utf8 \
   -filter-fields PostArea,AreaName \
   -rename-fields code=PostArea,name=AreaName \
   -each 'name = name.replace(/\uFFFD/g, " ").replace(/\s+/g, " ").trim()' \
+  -filter-islands min-area=5km2 \
+  -simplify interval=400 keep-shapes \
   -proj from=EPSG:27700 EPSG:4326 \
-  -simplify 0.5% keep-shapes \
   -rename-layers postcode_areas \
   -o format=topojson id-field=code quantization=1e4 uk-postcode-areas.topo.json
 ```
 
-The boundaries are reprojected from British National Grid to WGS84 and simplified to 0.5%, which keeps the island groups legible: Shetland retains 13 parts, the Outer Hebrides 15 and Scilly 3.
+Islands smaller than 5 km2 are removed, since at the map's size they would be specks of a pixel or two.
+The boundaries are then simplified to a 400 m tolerance on British National Grid, before being reprojected to WGS84.
+Simplifying by distance treats every coastline alike, whereas simplifying to a percentage of the points removes the smallest islands first.
+400 m is the coarsest tolerance that keeps all 72 islands of 5 km2 or more, each drawn with at least 6 points.
+The map shows 73 islands, among them Lundy and St Mary's in Scilly, plus an inland exclave of the ST area.
+Unsimplified, the source has 2,260 separate parts, most of them saltmarsh fragments and rocks.
 Each shape carries its postcode `code` and the GeoLytix `name`, which is where the app's place names come from.
 
 The `-each` step repairs upstream corruption.
