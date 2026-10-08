@@ -23,12 +23,16 @@ const entries: ChartEntry[] = [
   },
 ]
 
-async function renderChart(hovered: string | null = null, width = 400) {
+async function renderChart(
+  hovered: string | null = null,
+  width = 400,
+  bars: readonly ChartEntry[] = entries,
+) {
   const onHover = vi.fn()
   const screen = await render(
     <div style={{ width }}>
       <TopPostcodesChart
-        entries={entries}
+        entries={bars}
         hovered={hovered}
         label="Top areas"
         onHover={onHover}
@@ -73,15 +77,38 @@ it('ends each error bar at the bounds of its interval', async () => {
   expect(heightOf(number(stem, 'y2'))).toBeCloseTo(1.5)
 })
 
-it('labels the value axis with round numbers from zero', async () => {
+it('labels the value axis in percent from zero, with decimals only where needed', async () => {
   const { screen } = await renderChart()
   const ticks = [...screen.container.querySelectorAll('[data-tick] text')]
   expect(ticks.map((tick) => tick.textContent)).toEqual([
-    '0.0',
-    '0.5',
-    '1.0',
-    '1.5',
-    '2.0',
+    '0.0%',
+    '0.5%',
+    '1.0%',
+    '1.5%',
+    '2.0%',
+  ])
+})
+
+it('labels a wider axis in whole percentages', async () => {
+  const { screen } = await renderChart(
+    null,
+    400,
+    entries.map((entry) => ({
+      ...entry,
+      interval: {
+        lower: entry.interval.lower * 20,
+        mean: entry.interval.mean * 20,
+        upper: entry.interval.upper * 20,
+      },
+    })),
+  )
+  const ticks = [...screen.container.querySelectorAll('[data-tick] text')]
+  expect(ticks.map((tick) => tick.textContent)).toEqual([
+    '0%',
+    '10%',
+    '20%',
+    '30%',
+    '40%',
   ])
 })
 
@@ -105,7 +132,7 @@ it('lists the values for screen readers', async () => {
   const { screen } = await renderChart()
   const items = screen.container.querySelectorAll('ol li')
   expect(items[0]?.textContent).toBe(
-    en.details.chartEntry('Birmingham (B)', en.details.estimate(2, 1.8, 2.2)),
+    en.details.chartEntry('Birmingham (B)', en.percent(2)),
   )
   expect(items).toHaveLength(3)
 })

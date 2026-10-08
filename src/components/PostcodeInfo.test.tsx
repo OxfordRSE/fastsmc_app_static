@@ -3,10 +3,10 @@ import { page } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { en } from '../content/en'
 import {
-  type Interval,
   generationsFromYears,
   indexOf,
   intervalAt,
+  isUsable,
   loadMatrix,
   rank,
 } from '../lib/postcodeData'
@@ -26,16 +26,23 @@ function indexFor(code: string): number {
   return index
 }
 
-function labelOf(code: string): string {
+function nameOf(code: string): string {
   const area = areasByCode.get(code)
   if (!area) throw new Error(`Unknown postcode ${code}`)
-  return en.controls.area(area.name, code)
+  return area.name
 }
 
-function estimate(interval: Interval | null): string {
-  if (!interval) throw new Error('Expected data')
-  return en.details.estimate(interval.mean, interval.lower, interval.upper)
+const labelOf = (code: string) => en.controls.area(nameOf(code), code)
+
+function meanOf(from: string, to: string): number {
+  const interval = intervalAt(values, indexFor(from), indexFor(to), generations)
+  if (!interval) throw new Error(`No data for ${from} to ${to}`)
+  return interval.mean
 }
+
+// The link from HA to another area as the panel writes it.
+const percentFromHarrow = (code: string) =>
+  en.percent((100 * meanOf('HA', code)) / meanOf('HA', 'HA'))
 
 async function renderInfo(hovered: string | null = null) {
   const onHover = vi.fn()
@@ -53,6 +60,11 @@ async function renderInfo(hovered: string | null = null) {
   return { screen, onHover }
 }
 
+const rankedFromHarrow = () =>
+  rank(values, indexFor('HA'), generations).map(
+    ({ index }) => areasByIndex.get(index)?.code,
+  )
+
 it('names the selected area', async () => {
   const { screen } = await renderInfo()
   await expect
@@ -60,15 +72,15 @@ it('names the selected area', async () => {
     .toHaveTextContent(labelOf('HA'))
 })
 
-it('gives the relatedness within the selected area', async () => {
+it('states the strongest link as a percentage of the area itself', async () => {
   const { screen } = await renderInfo()
-  const ha = indexFor('HA')
-  await expect
-    .element(screen.getByText(en.details.within(labelOf('HA'))))
-    .toBeVisible()
+  const top = rankedFromHarrow()[0]
+  if (!top) throw new Error('No ranking')
   await expect
     .element(
-      screen.getByText(estimate(intervalAt(values, ha, ha, generations))),
+      screen.getByText(
+        en.details.topLink(nameOf('HA'), labelOf(top), percentFromHarrow(top)),
+      ),
     )
     .toBeVisible()
 })
@@ -81,13 +93,22 @@ it.each([
   await expect.element(screen.getByText(en.details.hoverPrompt)).toBeVisible()
 })
 
-it('compares the hovered area with the selected one', async () => {
+it('gives the hovered area as a percentage with its rank', async () => {
   const { screen } = await renderInfo('B')
-  const between = intervalAt(values, indexFor('HA'), indexFor('B'), generations)
+  const ranked = rankedFromHarrow()
   await expect
-    .element(screen.getByText(en.details.between(labelOf('HA'), labelOf('B'))))
+    .element(
+      screen.getByText(
+        en.details.hoveredLink(
+          nameOf('HA'),
+          labelOf('B'),
+          percentFromHarrow('B'),
+          ranked.indexOf('B') + 1,
+          ranked.length,
+        ),
+      ),
+    )
     .toBeVisible()
-  await expect.element(screen.getByText(estimate(between))).toBeVisible()
   await expect
     .element(screen.getByText(en.details.hoverPrompt))
     .not.toBeInTheDocument()
@@ -95,26 +116,61 @@ it('compares the hovered area with the selected one', async () => {
 
 it('says when the hovered area has no data', async () => {
   const { screen } = await renderInfo('CR')
-  await expect.element(screen.getByText(en.details.noData)).toBeVisible()
+  await expect
+    .element(screen.getByText(en.details.hoveredNoData(labelOf('CR'))))
+    .toBeVisible()
+})
+
+it('writes no raw values, only percentages', async () => {
+  const { screen } = await renderInfo('B')
+  await expect.element(screen.getByText(en.details.topAreas)).toBeVisible()
+  // Raw values are small decimals such as 0.0026.
+  expect(screen.container.textContent).not.toMatch(/0\.\d{2,}/)
 })
 
 it('charts the ten most related other areas, in order', async () => {
   const { screen } = await renderInfo()
-  const expected = rank(values, indexFor('HA'), generations)
-    .slice(0, 10)
-    .map(({ index }) => areasByIndex.get(index)?.code)
   await expect
     .element(
-      screen.getByRole('img', {
-        name: en.details.chartLabel(labelOf('HA')),
-      }),
+      screen.getByRole('img', { name: en.details.chartLabel(labelOf('HA')) }),
     )
     .toBeVisible()
   const codes = [...screen.container.querySelectorAll('[data-code] text')].map(
     (label) => label.textContent,
   )
-  expect(codes).toEqual(expected)
+  expect(codes).toEqual(rankedFromHarrow().slice(0, 10))
   expect(codes).not.toContain('HA')
+})
+
+it('lists the chart in percentages for screen readers', async () => {
+  const { screen } = await renderInfo()
+  const top = rankedFromHarrow()[0]
+  if (!top) throw new Error('No ranking')
+  expect(screen.container.querySelector('ol li')?.textContent).toBe(
+    en.details.chartEntry(labelOf(top), percentFromHarrow(top)),
+  )
+})
+
+it('keeps the chart in place whatever is hovered', async () => {
+  // The usable area with the longest name, which wraps the most.
+  const longest = [...areasByCode.values()]
+    .filter(({ code }) => code !== 'HA' && isUsable(code))
+    .map(({ code }) => code)
+    .reduce((a, b) => (labelOf(a).length >= labelOf(b).length ? a : b))
+  const chartTop = async (hovered: string | null) => {
+    const { screen } = await renderInfo(hovered)
+    const chart = screen.getByRole('img', {
+      name: en.details.chartLabel(labelOf('HA')),
+    })
+    await expect.element(chart).toBeVisible()
+    const top = chart.element().getBoundingClientRect().top
+    await screen.unmount()
+    return top
+  }
+  const settled = await chartTop(null)
+  for (const hovered of [longest, 'CR', 'B']) {
+    expect(await chartTop(hovered), hovered).toBe(settled)
+  }
 })
 
 it('reports a bar under the pointer', async () => {

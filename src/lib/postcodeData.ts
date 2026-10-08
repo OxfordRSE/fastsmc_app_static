@@ -225,6 +225,70 @@ export function relatedness(
 }
 
 /**
+ * Expresses relatedness as a percentage of the selected postcode's relatedness
+ * to itself.
+ *
+ * @remarks
+ * The selected area's link with itself is the yardstick, at 100%. Percentages
+ * read the same for both measures, and can exceed 100% where an area is closer
+ * to another than to itself (East London to South West London at 300 years).
+ *
+ * @param means - Mean relatedness keyed by matrix index, as from {@link relatedness}.
+ * @param from - Matrix index of the selected postcode, which must be among `means`.
+ * @returns Percentages keyed by matrix index; the selected postcode's is 100.
+ * @throws `RangeError` if the selected postcode's own value is missing or not positive.
+ */
+export function relativeToSelf(
+  means: ReadonlyMap<number, number>,
+  from: number,
+): ReadonlyMap<number, number> {
+  const own = ownValue(means, from)
+  return new Map([...means].map(([index, mean]) => [index, (100 * mean) / own]))
+}
+
+/**
+ * Expresses an interval as percentages of the selected postcode's relatedness
+ * to itself, as {@link relativeToSelf} does for means.
+ *
+ * @remarks
+ * Divides by the selected postcode's mean alone, ignoring that value's own
+ * uncertainty, so the result shows the interval's spread on the same scale
+ * rather than a full interval for the ratio.
+ *
+ * @param interval - The interval to rescale.
+ * @param own - The selected postcode's mean relatedness to itself.
+ * @returns The interval in percent.
+ */
+export function relativeInterval(interval: Interval, own: number): Interval {
+  return {
+    lower: (100 * interval.lower) / own,
+    mean: (100 * interval.mean) / own,
+    upper: (100 * interval.upper) / own,
+  }
+}
+
+/**
+ * The selected postcode's mean relatedness to itself.
+ *
+ * @param means - Mean relatedness keyed by matrix index.
+ * @param from - Matrix index of the selected postcode.
+ * @returns Its own value.
+ * @throws `RangeError` if that value is missing or not positive.
+ */
+export function ownValue(
+  means: ReadonlyMap<number, number>,
+  from: number,
+): number {
+  const own = means.get(from)
+  if (own === undefined || !(own > 0)) {
+    throw new RangeError(
+      `No positive relatedness of postcode ${String(from)} to itself`,
+    )
+  }
+  return own
+}
+
+/**
  * Ranks every other usable postcode by its relatedness to one postcode.
  *
  * @remarks

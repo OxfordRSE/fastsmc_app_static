@@ -14,7 +14,9 @@ import { at } from './arrays'
  * - `percentiles`: from the 5th to the 95th percentile, giving the most contrast
  *   across the middle of the distribution.
  *
- * - `custom`: the user's own choice, kept as the selection changes.
+ * - `custom`: the user's own choice, kept as the selection changes. The app
+ *   passes values in percent of the selected area's link with itself, so a
+ *   custom range keeps its meaning from one area to the next.
  *
  * In the original app these were `color_range_mode` 0, 1 and 2, labelled
  * "second largest", "95% percentiles" and "set by user".

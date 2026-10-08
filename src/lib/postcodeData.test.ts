@@ -11,6 +11,8 @@ import {
   matrixLength,
   rank,
   relatedness,
+  relativeInterval,
+  relativeToSelf,
   toMatrix,
   usableIndices,
 } from './postcodeData'
@@ -145,6 +147,52 @@ describe('relatedness', () => {
     expect(values.get(to)).toBe(
       intervalAt(matrices.genome, from, to, generations)?.mean,
     )
+  })
+})
+
+describe('relativeToSelf', () => {
+  const generations = generationsFromYears(300)
+
+  it('puts the selected postcode at 100% and scales the rest in proportion', () => {
+    const from = indexFor('HA')
+    const to = indexFor('LL')
+    const means = relatedness(matrices.ancestors, from, generations)
+    const percent = relativeToSelf(means, from)
+    expect(percent.get(from)).toBe(100)
+    expect(percent.get(to)).toBeCloseTo(
+      (100 * (means.get(to) ?? NaN)) / (means.get(from) ?? NaN),
+    )
+    expect([...percent.keys()]).toEqual([...means.keys()])
+  })
+
+  it('exceeds 100% where an area is closer to another than to itself', () => {
+    const from = indexFor('E')
+    const percent = relativeToSelf(
+      relatedness(matrices.ancestors, from, generations),
+      from,
+    )
+    expect(percent.get(indexFor('SW'))).toBeGreaterThan(100)
+  })
+
+  it.each([
+    ['missing', new Map([[1, 2]])],
+    ['zero', new Map([[0, 0]])],
+    ['not a number', new Map([[0, NaN]])],
+  ])(
+    'refuses a selected postcode whose own value is %s',
+    (_, means: Map<number, number>) => {
+      expect(() => relativeToSelf(means, 0)).toThrow(RangeError)
+    },
+  )
+})
+
+describe('relativeInterval', () => {
+  it('scales every bound by the selected postcode own value', () => {
+    expect(relativeInterval({ lower: 1, mean: 2, upper: 3 }, 4)).toEqual({
+      lower: 25,
+      mean: 50,
+      upper: 75,
+    })
   })
 })
 

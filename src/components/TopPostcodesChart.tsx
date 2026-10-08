@@ -1,6 +1,7 @@
 // Replaces TopHistogram in PostcodeInfo.js from the original frontend
 // (OxfordRSE/fastsmc_app_frontend), drawn with react-vis there. The 95% interval
-// is now an error bar rather than a solid box over a translucent bar.
+// is now an error bar rather than a solid box over a translucent bar, and the
+// values are percentages of the selected area's link with itself.
 
 import { scaleBand, scaleLinear } from 'd3-scale'
 import { useCopy } from '../content/useCopy'
@@ -20,7 +21,7 @@ export interface ChartEntry {
   readonly code: string
   /** The area's name and code, read out by screen readers. */
   readonly label: string
-  /** Its relatedness to the selected area. */
+  /** Its relatedness to the selected area, in percent of the selected area's link with itself. */
   readonly interval: Interval
 }
 
@@ -59,7 +60,11 @@ export function TopPostcodesChart({
     .padding(0.2)
   const top = Math.max(0, ...entries.map((entry) => entry.interval.upper))
   const y = scaleLinear().domain([0, top]).range([innerHeight, 0]).nice()
-  const formatTick = y.tickFormat(tickCount)
+  const ticks = y.ticks(tickCount)
+  // As many decimals as the spacing of the ticks needs, as d3's tickFormat does.
+  const step = (ticks[1] ?? 1) - (ticks[0] ?? 0)
+  const fractionDigits = Math.max(0, -Math.floor(Math.log10(step)))
+  const formatTick = (tick: number) => copy.percentTick(tick, fractionDigits)
 
   const barWidth = x.bandwidth()
   const cap = barWidth * capFraction
@@ -70,7 +75,7 @@ export function TopPostcodesChart({
         <g
           transform={`translate(${String(margin.left)},${String(margin.top)})`}
         >
-          {y.ticks(tickCount).map((tick) => (
+          {ticks.map((tick) => (
             <g
               key={tick}
               data-tick={tick}
@@ -170,14 +175,7 @@ export function TopPostcodesChart({
       <ol className="sr-only">
         {entries.map(({ code, label: area, interval }) => (
           <li key={code}>
-            {copy.details.chartEntry(
-              area,
-              copy.details.estimate(
-                interval.mean,
-                interval.lower,
-                interval.upper,
-              ),
-            )}
+            {copy.details.chartEntry(area, copy.percent(interval.mean))}
           </li>
         ))}
       </ol>

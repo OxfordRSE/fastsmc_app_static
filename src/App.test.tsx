@@ -69,8 +69,8 @@ describe('the layout', () => {
     await page.viewport(...initialViewport)
   })
 
-  async function renderAt(width: number) {
-    await page.viewport(width, 800)
+  async function renderAt(width: number, height = 800) {
+    await page.viewport(width, height)
     const screen = await render(<App />)
     await expect
       .element(screen.getByRole('heading', { name: en.appTitle }))
@@ -101,6 +101,49 @@ describe('the layout', () => {
     expect(panelBox.top).toBeGreaterThanOrEqual(mapBox.bottom)
     expect(panelBox.width).toBe(400)
   })
+
+  async function legendAt(width: number, height = 800) {
+    const { map } = await renderAt(width, height)
+    const legend = page.getByRole('figure', {
+      name: en.legend.title('Harrow'),
+    })
+    await expect.element(legend).toBeVisible()
+    await expect
+      .poll(() => map.getBoundingClientRect().height)
+      .toBeGreaterThan(0)
+    // The map as drawn, rather than its box.
+    const box = map.getBoundingClientRect()
+    const drawn = map.getBBox()
+    return {
+      legend: legend.element().getBoundingClientRect(),
+      mapRight: box.left + drawn.x + drawn.width,
+      mapBottom: box.bottom,
+    }
+  }
+
+  it.each([
+    [400, 800],
+    [900, 800],
+    [1200, 800],
+  ])(
+    'puts the legend below the map when there is no room beside it, %i by %i',
+    async (width, height) => {
+      const { legend, mapBottom } = await legendAt(width, height)
+      expect(legend.top).toBeGreaterThanOrEqual(mapBottom)
+    },
+  )
+
+  it.each([
+    [1440, 900],
+    [1920, 1080],
+  ])(
+    'puts the legend in the corner beside the map when there is room, %i by %i',
+    async (width, height) => {
+      const { legend, mapRight } = await legendAt(width, height)
+      expect(legend.left).toBeGreaterThanOrEqual(mapRight)
+      expect(legend.bottom).toBeGreaterThan(height - 50)
+    },
+  )
 })
 
 describe('the map', () => {
@@ -174,6 +217,29 @@ it('offers the map attribution, the data credit and more information beside the 
     .toBeVisible()
 })
 
+it('reads a custom colour range in percent of the selected area itself', async () => {
+  const { pathname } = window.location
+  window.history.replaceState(
+    null,
+    '',
+    `${pathname}?postcode=HA&range=custom&low=0&high=100`,
+  )
+  const screen = await render(<App />)
+  await expect
+    .element(screen.getByRole('heading', { name: en.appTitle }))
+    .toBeVisible()
+  const harrow = screen.container.querySelector('main > div [data-code="HA"]')
+  if (!harrow) throw new Error('No HA')
+  // HA is 100% of itself, the top of a 0% to 100% range: the darkest fill.
+  // Read as raw values instead, its 0.003 or so would be almost white.
+  await expect
+    .element(page.elementLocator(harrow))
+    .toHaveAttribute('fill', 'rgb(0, 0, 255)')
+  // The range is clamped to the values present, so only its top is certain.
+  await screen.getByRole('checkbox', { name: en.controls.showAdvanced }).click()
+  await expect.element(screen.getByText(/ to 100%$/)).toBeVisible()
+})
+
 describe('the details panel', () => {
   async function renderApp() {
     const screen = await render(<App />)
@@ -196,12 +262,7 @@ describe('the details panel', () => {
     await area('B').hover()
     await expect
       .element(
-        screen.getByText(
-          en.details.between(
-            en.controls.area('Harrow', 'HA'),
-            en.controls.area('Birmingham', 'B'),
-          ),
-        ),
+        screen.getByText(/^Birmingham \(B\): .+ of Harrow's link with itself/),
       )
       .toBeVisible()
   })

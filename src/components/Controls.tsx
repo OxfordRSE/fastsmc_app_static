@@ -71,9 +71,9 @@ interface AreaItem {
 export interface ControlsProps {
   /** The current settings. */
   readonly view: ViewState
-  /** The colour range in effect, which the range slider shows. */
+  /** The colour range in effect, in percent of the selected area's link with itself; the range slider shows it. */
   readonly range: ColourRange
-  /** The smallest and largest values on the map: the range slider's limits. */
+  /** The smallest and largest values on the map, in the same percent: the range slider's limits. */
   readonly extent: ColourRange
   /** Receives the change when a control is used. */
   readonly dispatch: (action: Action) => void
