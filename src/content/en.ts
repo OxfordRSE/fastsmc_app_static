@@ -23,6 +23,8 @@ export interface Copy {
   readonly loading: string
   /** Shown if the data cannot be downloaded. */
   readonly loadError: string
+  /** A percentage, such as "46%", given as a number of percent, such as 46. */
+  readonly percent: (value: number) => string
   /** Names of the two measures, as offered in the measure selector. */
   readonly measures: {
     readonly ancestors: string
@@ -68,7 +70,7 @@ export interface Copy {
     readonly lightest: string
     /** Name of the colour range slider's upper handle, for screen readers. */
     readonly darkest: string
-    /** The colour range slider's current values. */
+    /** The colour range slider's current values, in percent. */
     readonly rangeValues: (low: number, high: number) => string
     /** Label of the shareable link to the current view. */
     readonly shareLink: string
@@ -157,6 +159,12 @@ const sentences = (...lines: string[]) => lines.join(' ')
 // Relatedness values span several orders of magnitude, so show 2 significant figures.
 const value = new Intl.NumberFormat('en-GB', { maximumSignificantDigits: 2 })
 const years = new Intl.NumberFormat('en-GB')
+// Percentages of the selected area's link with itself, to the nearest 1%.
+const percent = new Intl.NumberFormat('en-GB', {
+  style: 'percent',
+  maximumFractionDigits: 0,
+})
+const asPercent = (value: number) => percent.format(value / 100)
 
 /** English text. */
 export const en: Copy = {
@@ -164,6 +172,7 @@ export const en: Copy = {
   loading: 'Loading the map...',
   loadError:
     'The map data could not be loaded. Please check your connection and reload the page.',
+  percent: asPercent,
 
   measures: {
     ancestors: 'number of ancestors',
@@ -194,7 +203,7 @@ export const en: Copy = {
     colourRangeMode: 'Mode',
     lightest: 'Value shown in the lightest colour',
     darkest: 'Value shown in the darkest colour',
-    rangeValues: (low, high) => `${value.format(low)} to ${value.format(high)}`,
+    rangeValues: (low, high) => `${asPercent(low)} to ${asPercent(high)}`,
     shareLink: 'Copy parameters',
     shareLinkDescription: 'Use this URL to save your current parameters.',
     copyLink: 'Copy link',

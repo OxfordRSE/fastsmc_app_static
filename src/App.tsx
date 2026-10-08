@@ -9,7 +9,12 @@ import { useCopy } from './content/useCopy'
 import { useMatrices } from './hooks/useMatrices'
 import { appReducer, initialState } from './lib/appState'
 import { colourRange, valueExtent } from './lib/colourRange'
-import { generationsFromYears, indexOf, relatedness } from './lib/postcodeData'
+import {
+  generationsFromYears,
+  indexOf,
+  relatedness,
+  relativeToSelf,
+} from './lib/postcodeData'
 import { serialiseViewState } from './lib/urlState'
 
 /**
@@ -57,7 +62,8 @@ export default function App() {
   }
   const matrix = matrices.matrices[view.measure]
   const generations = generationsFromYears(view.years)
-  const values = relatedness(matrix, from, generations)
+  // Percentages of the selected area's link with itself, for the map and its colour range.
+  const values = relativeToSelf(relatedness(matrix, from, generations), from)
   const rangeValues = [...values.values()]
   const range = colourRange(view.range, rangeValues)
   const hover = (postcode: string) => {

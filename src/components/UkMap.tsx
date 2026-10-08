@@ -23,7 +23,7 @@ import {
 
 /** Props for {@link UkMap}. */
 export interface UkMapProps {
-  /** Mean relatedness to the selected area, keyed by matrix index. */
+  /** Relatedness to the selected area, keyed by matrix index: any scale, such as percent of its link with itself. */
   readonly values: ReadonlyMap<number, number>
   /** The values shown in the lightest and darkest colours. */
   readonly range: ColourRange

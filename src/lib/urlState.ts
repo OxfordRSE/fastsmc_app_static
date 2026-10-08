@@ -98,8 +98,9 @@ export function parseViewState(search: string): ViewState {
  *
  * @remarks
  * Settings equal to their defaults are left out, parameters always appear in
- * the same order, years are rounded to whole years, and a custom range is
- * written to 4 significant figures.
+ * the same order, years are rounded to whole years, and a custom range, in
+ * percent of the selected area's link with itself, is written to 4 significant
+ * figures.
  *
  * @param state - The view to record.
  * @returns The query string with its leading `?`, or an empty string for the

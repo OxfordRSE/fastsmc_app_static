@@ -174,6 +174,29 @@ it('offers the map attribution, the data credit and more information beside the 
     .toBeVisible()
 })
 
+it('reads a custom colour range in percent of the selected area itself', async () => {
+  const { pathname } = window.location
+  window.history.replaceState(
+    null,
+    '',
+    `${pathname}?postcode=HA&range=custom&low=0&high=100`,
+  )
+  const screen = await render(<App />)
+  await expect
+    .element(screen.getByRole('heading', { name: en.appTitle }))
+    .toBeVisible()
+  const harrow = screen.container.querySelector('main > div [data-code="HA"]')
+  if (!harrow) throw new Error('No HA')
+  // HA is 100% of itself, the top of a 0% to 100% range: the darkest fill.
+  // Read as raw values instead, its 0.003 or so would be almost white.
+  await expect
+    .element(page.elementLocator(harrow))
+    .toHaveAttribute('fill', 'rgb(0, 0, 255)')
+  // The range is clamped to the values present, so only its top is certain.
+  await screen.getByRole('checkbox', { name: en.controls.showAdvanced }).click()
+  await expect.element(screen.getByText(/ to 100%$/)).toBeVisible()
+})
+
 describe('the details panel', () => {
   async function renderApp() {
     const screen = await render(<App />)
