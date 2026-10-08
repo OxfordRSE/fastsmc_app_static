@@ -32,8 +32,9 @@ npm run dev
 | `npm run lint`         | Run ESLint                                   |
 | `npm run format`       | Format with Prettier                         |
 | `npm run format:check` | Check formatting without writing             |
-| `npm test`             | Run the unit tests once                      |
-| `npm run test:watch`   | Run the unit tests on change                 |
+| `npm test`             | Run the unit and component tests once        |
+| `npm run test:watch`   | Run the unit and component tests on change   |
+| `npm run test:e2e`     | Build the site and smoke-test it in Chromium |
 
 ## Data
 
