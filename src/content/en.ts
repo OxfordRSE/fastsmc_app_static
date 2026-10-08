@@ -130,6 +130,15 @@ export interface Copy {
     /** One bar of the chart, for screen readers. */
     readonly chartEntry: (area: string, percent: string) => string
   }
+  /** The map's colour legend. */
+  readonly legend: {
+    /** Says what the colours show, given the selected area's place name. */
+    readonly title: (selected: string) => string
+    /** An end of the colour scale that values below it share, such as "8% or less". */
+    readonly atMost: (percent: string) => string
+    /** An end of the colour scale that values above it share, such as "46% or more". */
+    readonly atLeast: (percent: string) => string
+  }
   /** The information dialog. */
   readonly info: {
     /** Label of the button that opens the dialog. */
@@ -273,6 +282,12 @@ export const en: Copy = {
     chartLabel: (area) =>
       `Bar chart of the 10 areas most related to ${area}, with error bars`,
     chartEntry: (area, share) => `${area}: ${share}`,
+  },
+
+  legend: {
+    title: (selected) => `% of ${selected}'s link with itself`,
+    atMost: (share) => `${share} or less`,
+    atLeast: (share) => `${share} or more`,
   },
 
   info: {

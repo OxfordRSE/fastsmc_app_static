@@ -2,10 +2,12 @@ import { useEffect, useReducer } from 'react'
 import { Controls } from './components/Controls'
 import { Credits } from './components/Credits'
 import { InfoDialog } from './components/InfoDialog'
+import { Legend } from './components/Legend'
 import { PostcodeInfo } from './components/PostcodeInfo'
 import { UkMap } from './components/UkMap'
 import { Spinner } from './components/ui/spinner'
 import { useCopy } from './content/useCopy'
+import { useElementSize } from './hooks/useElementSize'
 import { useMatrices } from './hooks/useMatrices'
 import { appReducer, initialState } from './lib/appState'
 import { colourRange, valueExtent } from './lib/colourRange'
@@ -15,7 +17,13 @@ import {
   relatedness,
   relativeToSelf,
 } from './lib/postcodeData'
+import { sideSpace } from './lib/mapLayout'
+import { areasByCode } from './lib/postcodeMap'
 import { serialiseViewState } from './lib/urlState'
+
+// Space the legend needs beside the map: its width (w-52, 208 px), its 12 px
+// offset from the corner (right-3), and 12 px clear of the map.
+const legendRoomPx = 232
 
 /**
  * The root component: loads the data and holds the app's state.
@@ -31,6 +39,8 @@ export default function App() {
     initialState,
   )
   const { view, hovered } = state
+  const [mapAreaRef, mapArea] = useElementSize<HTMLDivElement>()
+  const legendBeside = sideSpace(mapArea.width, mapArea.height) >= legendRoomPx
 
   // Pathname included: an empty string would keep the current query.
   useEffect(() => {
@@ -66,6 +76,7 @@ export default function App() {
   const values = relativeToSelf(relatedness(matrix, from, generations), from)
   const rangeValues = [...values.values()]
   const range = colourRange(view.range, rangeValues)
+  const extent = valueExtent(rangeValues)
   const hover = (postcode: string) => {
     dispatch({ type: 'hover-postcode', postcode })
   }
@@ -74,24 +85,45 @@ export default function App() {
     // Narrow screens: the map, then the panel below it, scrolling as one page.
     // From the md breakpoint up: side by side, filling the window.
     <main className="flex flex-col md:h-dvh md:flex-row">
-      <div className="h-[70dvh] md:h-auto md:min-w-0 md:flex-1">
-        <UkMap
-          values={values}
-          range={range}
-          selected={view.postcode}
-          hovered={hovered}
-          onSelect={(postcode) => {
-            dispatch({ type: 'select-postcode', postcode })
-          }}
-          onHover={hover}
-        />
+      <div
+        ref={mapAreaRef}
+        className="relative flex h-[70dvh] flex-col md:h-auto md:min-w-0 md:flex-1"
+      >
+        <div className="min-h-0 flex-1">
+          <UkMap
+            values={values}
+            range={range}
+            selected={view.postcode}
+            hovered={hovered}
+            onSelect={(postcode) => {
+              dispatch({ type: 'select-postcode', postcode })
+            }}
+            onHover={hover}
+          />
+        </div>
+        {/* In the bottom-right corner when the space beside the map fits it;
+            otherwise below the map, so it never covers an area. */}
+        <div
+          data-legend-placement={legendBeside ? 'corner' : 'below'}
+          className={
+            legendBeside
+              ? 'absolute right-3 bottom-3'
+              : 'flex justify-center px-3 pb-3'
+          }
+        >
+          <Legend
+            range={range}
+            extent={extent}
+            selected={areasByCode.get(view.postcode)?.name ?? view.postcode}
+          />
+        </div>
       </div>
       <aside className="flex flex-col gap-6 border-t p-4 md:w-96 md:shrink-0 md:overflow-y-auto md:border-t-0 md:border-l">
         <h1 className="text-2xl font-semibold">{copy.appTitle}</h1>
         <Controls
           view={view}
           range={range}
-          extent={valueExtent(rangeValues)}
+          extent={extent}
           dispatch={dispatch}
         />
         <PostcodeInfo
