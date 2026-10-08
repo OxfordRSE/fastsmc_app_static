@@ -63,6 +63,38 @@ uv lock --script scripts/build_data.py            # after editing the declared d
 uv lock --script scripts/build_data.py --upgrade  # to move to the newest allowed versions
 ```
 
+## UI components
+
+The interface uses [shadcn/ui](https://ui.shadcn.com/) components, built on Base UI and styled with Tailwind CSS.
+Their source is copied into `src/components/ui/` by the shadcn CLI and is ours to keep.
+That folder is exempt from the strict ESLint rules, the TSDoc rules and Prettier, so it stays as the CLI wrote it.
+It still must not contain user-visible text, which belongs in `src/content/en.ts`.
+
+To add a component, run the CLI at the version recorded in the header of `src/components/ui/shadcn.css`:
+
+```bash
+npx shadcn@4.21.4 add slider
+```
+
+Review the diff before committing.
+The CLI may try to add `shadcn` as a dependency or add `@import "shadcn/tailwind.css"` to `src/index.css`; revert both, since that stylesheet is vendored as described below.
+
+### Upgrading the vendored stylesheet
+
+shadcn ships a stylesheet that its components rely on, inside the CLI package.
+Rather than depend on the whole CLI, it is copied to `src/components/ui/shadcn.css`, below a header recording its version and MIT licence.
+To upgrade it to a newer shadcn version, extract the file from that version's package:
+
+```bash
+cd "$(mktemp -d)"
+npm pack shadcn@<version>
+tar -xzf shadcn-<version>.tgz package/dist/tailwind.css package/LICENSE.md
+```
+
+Then replace everything below the header of `src/components/ui/shadcn.css` with `package/dist/tailwind.css`.
+Update the version in the header, and the licence text if `package/LICENSE.md` has changed.
+Use the same version when adding components afterwards, and run all the checks before committing.
+
 ## Licence
 
 GPL-3.0, see `LICENSE`.

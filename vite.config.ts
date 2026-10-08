@@ -11,6 +11,8 @@ const escapeHtml = (text: string) =>
 export default defineConfig({
   // Set in CI from actions/configure-pages, e.g. '/fastsmc_app_static'; unset locally.
   base: `${process.env.BASE_PATH ?? ''}/`,
+  // Import aliases such as "@/" come from tsconfig "paths", so they are defined once.
+  resolve: { tsconfigPaths: true },
   plugins: [
     react(),
     tailwindcss(),

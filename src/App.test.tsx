@@ -62,6 +62,47 @@ it.each([
   expect(window.location.search).toBe(after)
 })
 
+describe('the layout', () => {
+  const initialViewport = [window.innerWidth, window.innerHeight] as const
+
+  afterEach(async () => {
+    await page.viewport(...initialViewport)
+  })
+
+  async function renderAt(width: number) {
+    await page.viewport(width, 800)
+    const screen = await render(<App />)
+    await expect
+      .element(screen.getByRole('heading', { name: en.appTitle }))
+      .toBeVisible()
+    const map = screen.container.querySelector('svg')
+    if (!map) throw new Error('No map')
+    const panel = screen.getByRole('complementary').element()
+    return { map, panel }
+  }
+
+  it('puts the panel beside the map on wide screens', async () => {
+    const { map, panel } = await renderAt(1200)
+    await expect
+      .poll(() => map.getBoundingClientRect().width)
+      .toBeGreaterThan(0)
+    const mapBox = map.getBoundingClientRect()
+    const panelBox = panel.getBoundingClientRect()
+    expect(panelBox.left).toBeGreaterThanOrEqual(mapBox.right)
+    expect(panelBox.top).toBe(0)
+    expect(panelBox.height).toBe(800)
+  })
+
+  it('puts the panel below the map on narrow screens', async () => {
+    const { map, panel } = await renderAt(400)
+    await expect.poll(() => map.getBoundingClientRect().width).toBe(400)
+    const mapBox = map.getBoundingClientRect()
+    const panelBox = panel.getBoundingClientRect()
+    expect(panelBox.top).toBeGreaterThanOrEqual(mapBox.bottom)
+    expect(panelBox.width).toBe(400)
+  })
+})
+
 describe('the map', () => {
   async function renderApp() {
     const screen = await render(<App />)

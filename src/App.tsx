@@ -1,5 +1,6 @@
 import { useEffect, useReducer } from 'react'
 import { UkMap } from './components/UkMap'
+import { Spinner } from './components/ui/spinner'
 import { useCopy } from './content/useCopy'
 import { useMatrices } from './hooks/useMatrices'
 import { appReducer, initialState } from './lib/appState'
@@ -32,7 +33,15 @@ export default function App() {
   }, [view])
 
   if (matrices.status === 'loading') {
-    return <p role="status">{copy.loading}</p>
+    return (
+      <p
+        role="status"
+        className="flex h-dvh items-center justify-center gap-2 text-muted-foreground"
+      >
+        <Spinner aria-hidden className="size-6" />
+        {copy.loading}
+      </p>
+    )
   }
   if (matrices.status === 'error') {
     return <p role="alert">{copy.loadError}</p>
@@ -50,9 +59,10 @@ export default function App() {
   const range = colourRange(view.range, [...values.values()])
 
   return (
-    <div className="flex h-dvh flex-col">
-      <h1 className="m-4 text-3xl font-bold">{copy.appTitle}</h1>
-      <div className="min-h-0 flex-1">
+    // Narrow screens: the map, then the panel below it, scrolling as one page.
+    // From the md breakpoint up: side by side, filling the window.
+    <main className="flex flex-col md:h-dvh md:flex-row">
+      <div className="h-[70dvh] md:h-auto md:min-w-0 md:flex-1">
         <UkMap
           values={values}
           range={range}
@@ -66,6 +76,9 @@ export default function App() {
           }}
         />
       </div>
-    </div>
+      <aside className="border-t p-4 md:w-96 md:shrink-0 md:overflow-y-auto md:border-t-0 md:border-l">
+        <h1 className="text-2xl font-semibold">{copy.appTitle}</h1>
+      </aside>
+    </main>
   )
 }
