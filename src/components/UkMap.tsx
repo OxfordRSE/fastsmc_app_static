@@ -93,7 +93,14 @@ export function UkMap({
 
   return (
     <div ref={ref} className="size-full">
-      <svg width={width} height={height}>
+      {/* Round joins and caps, inherited by every outline: sharp mitre joins
+          spike at tight turns of the coastline. */}
+      <svg
+        width={width}
+        height={height}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      >
         {postcodeAreas.features.map(({ properties }) => {
           const { code, matrixIndex, hasData } = properties
           const value = values.get(matrixIndex)
