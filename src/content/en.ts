@@ -74,6 +74,10 @@ export interface Copy {
     readonly shareLink: string
     /** Explains the shareable link. */
     readonly shareLinkDescription: string
+    /** Name of the button that copies the shareable link, for screen readers. */
+    readonly copyLink: string
+    /** Announced once the link has been copied. */
+    readonly linkCopied: string
     /** Name of a help button, for screen readers, such as "Help: Measure". */
     readonly help: (topic: string) => string
   }
@@ -129,6 +133,14 @@ export interface Copy {
     readonly dataLink: string
     /** The map boundaries' attribution, required by their licence: exactly as in data/PROVENANCE.md. */
     readonly map: readonly string[]
+    /** Names the map's licence; `{link}` marks where {@link Copy.credits.mapLicenceLink} goes. */
+    readonly mapLicence: string
+    /** The map licence's name, linked to it. */
+    readonly mapLicenceLink: string
+    /** Label of the button that opens the full credits. */
+    readonly open: string
+    /** Title of the full credits' dialog. */
+    readonly title: string
   }
   /** Explanations shown in the help popovers. */
   readonly help: {
@@ -185,6 +197,8 @@ export const en: Copy = {
     rangeValues: (low, high) => `${value.format(low)} to ${value.format(high)}`,
     shareLink: 'Copy parameters',
     shareLinkDescription: 'Use this URL to save your current parameters.',
+    copyLink: 'Copy link',
+    linkCopied: 'Link copied',
     help: (topic) => `Help: ${topic}`,
   },
 
@@ -208,9 +222,9 @@ export const en: Copy = {
     close: 'Close',
     overview: sentences(
       'The map shows genetic relationships between UK postcode areas, measured by identity-by-descent (IBD) over the past 300 to 1,500 years, depending on the "Time threshold".',
-      'The intensity of the colour reflects how closely related the selected area, outlined in red, is to every other area.',
+      'The intensity of the colour reflects how closely related the selected area, outlined in orange, is to every other area.',
       'Areas shown in grey have too little data for this analysis.',
-      'Move the mouse over an area to highlight it in green.',
+      'Move the mouse over an area to outline it in black.',
       'More detail appears in the box below the controls.',
       'Use "Show advanced" to reveal additional settings.',
     ),
@@ -238,6 +252,10 @@ export const en: Copy = {
       'Contains Royal Mail data © Royal Mail copyright and database right 2012.',
       'Contains National Statistics data © Crown copyright and database right 2012.',
     ],
+    mapLicence: 'Map boundaries used under the {link}.',
+    mapLicenceLink: 'Open Government Licence',
+    open: 'Credits',
+    title: 'Credits',
   },
 
   help: {

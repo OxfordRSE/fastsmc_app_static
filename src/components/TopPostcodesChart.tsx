@@ -28,7 +28,7 @@ export interface ChartEntry {
 export interface TopPostcodesChartProps {
   /** The bars, in order. */
   readonly entries: readonly ChartEntry[]
-  /** Code of the area under the pointer, whose bar is outlined in green, if any. */
+  /** Code of the area under the pointer, whose bar is outlined like it is on the map, if any. */
   readonly hovered: string | null
   /** Describes the chart for screen readers. */
   readonly label: string
