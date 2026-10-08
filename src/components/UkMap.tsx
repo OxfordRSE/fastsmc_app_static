@@ -8,13 +8,14 @@ import { useMemo } from 'react'
 import { useElementSize } from '../hooks/useElementSize'
 import type { ColourRange } from '../lib/colourRange'
 import { postcodeAreas } from '../lib/postcodeMap'
-
-const lightest = 'white'
-const darkest = 'blue'
-const noData = '#c8c8c8'
-const border = 'rgba(0, 0, 0, 0.5)'
-const selectedOutline = 'red'
-const hoveredOutline = 'green'
+import {
+  border,
+  darkest,
+  hoveredColour,
+  lightest,
+  noData,
+  selectedColour,
+} from './palette'
 
 /** Props for {@link UkMap}. */
 export interface UkMapProps {
@@ -118,8 +119,8 @@ export function UkMap({
             />
           )
         })}
-        {outline(hovered, hoveredOutline, 'hovered')}
-        {outline(selected, selectedOutline, 'selected')}
+        {outline(hovered, hoveredColour, 'hovered')}
+        {outline(selected, selectedColour, 'selected')}
       </svg>
     </div>
   )
