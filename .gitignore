@@ -161,3 +161,7 @@ dist-ssr
 
 # Vitest browser mode artefacts, such as screenshots of failed tests
 .vitest/
+
+# Playwright smoke test artefacts, such as traces of failed tests
+test-results/
+playwright-report/
