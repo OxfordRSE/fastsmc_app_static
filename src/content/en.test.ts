@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import type { ColourRangeMode } from '../lib/colourRange'
 import type { Measure } from '../lib/postcodeData'
@@ -34,5 +35,25 @@ describe('en', () => {
     for (const [, text] of leaves(en.help)) {
       expect(text).not.toMatch(/\s{2}/)
     }
+  })
+
+  it.each(leaves(en).filter(([, text]) => /[{}]/.test(text)))(
+    '%s marks one link and nothing else in braces',
+    (_, text) => {
+      expect(text.split('{link}')).toHaveLength(2)
+      expect(text.replace('{link}', '')).not.toMatch(/[{}]/)
+    },
+  )
+
+  it('attributes the map exactly as its licence requires', () => {
+    const provenance = readFileSync(
+      new URL('../../data/PROVENANCE.md', import.meta.url),
+      'utf8',
+    )
+    const quoted = provenance
+      .split('\n')
+      .filter((line) => line.startsWith('> '))
+      .map((line) => line.slice(2))
+    expect(en.credits.map).toEqual(quoted)
   })
 })

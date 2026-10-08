@@ -7,8 +7,13 @@
 // Has no imports, because vite.config.ts also reads it to set the page title.
 //
 // Ports help_text.js from the original frontend (OxfordRSE/fastsmc_app_frontend):
-// help_dataset, help_datatype and help_mode became help.dataset, help.measure and
-// help.colourRange.
+// help_datatype and help_mode became help.measure and help.colourRange, and
+// help_dataset, reworded without the dropped dataset selector, became
+// info.overview in the information dialog. The dialog and footer text come from
+// UserInterface.js and App.js.
+//
+// Sentences containing a link mark its place with {link}; the link's text is a
+// separate entry, so a translation can move the link within the sentence.
 
 /** All user-visible text, for one language. */
 export interface Copy {
@@ -91,10 +96,42 @@ export interface Copy {
     /** One bar of the chart, for screen readers. */
     readonly chartEntry: (area: string, estimate: string) => string
   }
+  /** The information dialog. */
+  readonly info: {
+    /** Label of the button that opens the dialog. */
+    readonly open: string
+    /** The dialog's title. */
+    readonly title: string
+    /** Label of the buttons that close the dialog. */
+    readonly close: string
+    /** How to read the map. */
+    readonly overview: string
+    /** Who made the site, and the data it shows. */
+    readonly about: string
+    /** An invitation to send feedback. */
+    readonly feedback: string
+    /** Points to the paper; `{link}` marks where {@link Copy.info.paperLink} goes. */
+    readonly paper: string
+    /** The paper's citation, linked to it. */
+    readonly paperLink: string
+    /** How to get in touch. */
+    readonly contact: string
+  }
+  /** The credits at the foot of the side panel. */
+  readonly credits: {
+    /** The copyright notice: the legal owner, not the authors. */
+    readonly copyright: string
+    /** The people who made the site. */
+    readonly developers: string
+    /** Cites the dataset; `{link}` marks where {@link Copy.credits.dataLink} goes. */
+    readonly data: string
+    /** The dataset's DOI, linked to it. */
+    readonly dataLink: string
+    /** The map boundaries' attribution, required by their licence: exactly as in data/PROVENANCE.md. */
+    readonly map: readonly string[]
+  }
   /** Explanations shown in the help popovers. */
   readonly help: {
-    /** Overview of what the map shows. */
-    readonly dataset: string
     /** The measure selector. */
     readonly measure: string
     /** The colour-range settings. */
@@ -165,17 +202,45 @@ export const en: Copy = {
     chartEntry: (area, estimate) => `${area}: ${estimate}`,
   },
 
-  help: {
-    dataset: sentences(
-      'Select the type of data to display on the map.',
-      '"IBD" (identity-by-descent, currently the only option) shows genetic relationships between UK postcode areas over the past 300 to 1,500 years, depending on the "Time threshold" set below.',
+  info: {
+    open: 'More information',
+    title: 'More information',
+    close: 'Close',
+    overview: sentences(
+      'The map shows genetic relationships between UK postcode areas, measured by identity-by-descent (IBD) over the past 300 to 1,500 years, depending on the "Time threshold".',
       'The intensity of the colour reflects how closely related the selected area, outlined in red, is to every other area.',
       'Areas shown in grey have too little data for this analysis.',
       'Move the mouse over an area to highlight it in green.',
-      'More detail appears in the box below.',
+      'More detail appears in the box below the controls.',
       'Use "Show advanced" to reveal additional settings.',
     ),
+    about: sentences(
+      'This website was developed by Fergus Cooper, Martin Robinson, Juba Nait Saada, and Pier Palamara, as part of research done at the University of Oxford, UK.',
+      'The data reflects genetic relatedness in the past 1,500 years among samples from the UK Biobank data set, which contains the genomes of about 500,000 donors from the UK.',
+    ),
+    feedback:
+      'We welcome feedback, bug reports, and comments on patterns reflecting historical or demographic events you may find in the data.',
+    paper: 'Additional details on the analysis are in {link}.',
+    paperLink: 'Nait Saada et al., Nature Communications 11, 6130 (2020)',
+    contact:
+      'To contact us, please write to Pier using <lastnamelowercase>@stats.ox.ac.uk.',
+  },
 
+  credits: {
+    copyright: '© 2019-2026 University of Oxford.',
+    developers:
+      'Developed by Fergus Cooper, Martin Robinson, Juba Nait Saada and Pier Palamara.',
+    data: 'Data: {link}, licensed under CC BY 4.0.',
+    dataLink: 'doi:10.5281/zenodo.4012677',
+    map: [
+      'Postal Boundaries © GeoLytix copyright and database right 2012.',
+      'Contains Ordnance Survey data © Crown copyright and database right 2012.',
+      'Contains Royal Mail data © Royal Mail copyright and database right 2012.',
+      'Contains National Statistics data © Crown copyright and database right 2012.',
+    ],
+  },
+
+  help: {
     measure: sentences(
       'Select which measure of shared genetic ancestry to display.',
       'With "percent shared genome", the colours and numbers show the percentage of the genome that two typical individuals from the two areas share identical-by-descent, inherited from common ancestors who lived between today and the selected time threshold.',

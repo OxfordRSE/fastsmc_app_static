@@ -1,5 +1,7 @@
 import { useEffect, useReducer } from 'react'
 import { Controls } from './components/Controls'
+import { Credits } from './components/Credits'
+import { InfoDialog } from './components/InfoDialog'
 import { PostcodeInfo } from './components/PostcodeInfo'
 import { UkMap } from './components/UkMap'
 import { Spinner } from './components/ui/spinner'
@@ -93,6 +95,10 @@ export default function App() {
           generations={generations}
           onHover={hover}
         />
+        <div>
+          <InfoDialog />
+        </div>
+        <Credits />
       </aside>
     </main>
   )

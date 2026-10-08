@@ -159,6 +159,21 @@ describe('the controls', () => {
   })
 })
 
+it('shows the map attribution, the data credit and more information beside the map', async () => {
+  const screen = await render(<App />)
+  for (const line of en.credits.map) {
+    await expect
+      .element(screen.getByText(line, { exact: true }))
+      .toBeInTheDocument()
+  }
+  await expect
+    .element(screen.getByRole('link', { name: en.credits.dataLink }))
+    .toBeInTheDocument()
+  await expect
+    .element(screen.getByRole('button', { name: en.info.open }))
+    .toBeInTheDocument()
+})
+
 describe('the details panel', () => {
   async function renderApp() {
     const screen = await render(<App />)
