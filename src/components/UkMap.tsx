@@ -1,6 +1,8 @@
 // Ports UkMap.js from the original frontend (OxfordRSE/fastsmc_app_frontend),
-// keeping its projection, colours and outlines. Areas without data are now grey
-// and cannot be selected, where the original drew them white.
+// keeping its projection and fill colours. Areas without data are now grey and
+// cannot be selected, where the original drew them white; the map is centred
+// in its box; and the red and green outlines became colour-blind-safe ones
+// with halos (see palette.ts).
 
 import { geoAlbers, geoPath } from 'd3-geo'
 import { scaleLinear } from 'd3-scale'
@@ -12,9 +14,11 @@ import {
   border,
   darkest,
   hoveredColour,
+  hoveredHalo,
   lightest,
   noData,
   selectedColour,
+  selectedHalo,
 } from './palette'
 
 /** Props for {@link UkMap}. */
@@ -23,9 +27,9 @@ export interface UkMapProps {
   readonly values: ReadonlyMap<number, number>
   /** The values shown in the lightest and darkest colours. */
   readonly range: ColourRange
-  /** Code of the selected area, outlined in red. */
+  /** Code of the selected area, outlined in orange. */
   readonly selected: string
-  /** Code of the area under the pointer, outlined in green, if any. */
+  /** Code of the area under the pointer, outlined in black, if any. */
   readonly hovered: string | null
   /** Called when an area with data is clicked. */
   readonly onSelect: (code: string) => void
@@ -51,14 +55,17 @@ export function UkMap({
 
   const outlines = useMemo(() => {
     if (width === 0 || height === 0) return new Map<string, string>()
+    const margin = 0.05 * Math.min(width, height)
     const projection = geoAlbers()
       .center([5, 54.4])
       .rotate([4.4, 0])
       .parallels([50, 60])
+      // Centred, with a margin of 5% of the smaller dimension on every side.
+      // The original fitted the map to the top-left 90% of the box.
       .fitExtent(
         [
-          [0, 0],
-          [0.9 * width, 0.9 * height],
+          [margin, margin],
+          [width - margin, height - margin],
         ],
         postcodeAreas,
       )
@@ -76,24 +83,33 @@ export function UkMap({
     .range([lightest, darkest])
     .clamp(true)
 
-  const outline = (code: string | null, stroke: string, kind: string) => {
+  // A wider halo underneath keeps the outline visible on light and dark fills.
+  const outline = (
+    code: string | null,
+    stroke: string,
+    halo: string,
+    kind: string,
+  ) => {
     const d = code === null ? undefined : outlines.get(code)
     if (d === undefined) return null
     return (
-      <path
-        d={d}
-        data-outline={kind}
-        fill="none"
-        stroke={stroke}
-        strokeWidth={2.5}
-        pointerEvents="none"
-      />
+      <g fill="none" pointerEvents="none">
+        <path d={d} data-halo={kind} stroke={halo} strokeWidth={4.5} />
+        <path d={d} data-outline={kind} stroke={stroke} strokeWidth={2.5} />
+      </g>
     )
   }
 
   return (
     <div ref={ref} className="size-full">
-      <svg width={width} height={height}>
+      {/* Round joins and caps, inherited by every outline: sharp mitre joins
+          spike at tight turns of the coastline. */}
+      <svg
+        width={width}
+        height={height}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      >
         {postcodeAreas.features.map(({ properties }) => {
           const { code, matrixIndex, hasData } = properties
           const value = values.get(matrixIndex)
@@ -119,8 +135,8 @@ export function UkMap({
             />
           )
         })}
-        {outline(hovered, hoveredColour, 'hovered')}
-        {outline(selected, selectedColour, 'selected')}
+        {outline(hovered, hoveredColour, hoveredHalo, 'hovered')}
+        {outline(selected, selectedColour, selectedHalo, 'selected')}
       </svg>
     </div>
   )

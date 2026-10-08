@@ -13,6 +13,7 @@ import { type Measure, yearsExtent } from '../lib/postcodeData'
 import { postcodeAreas } from '../lib/postcodeMap'
 import { type ViewState, serialiseViewState } from '../lib/urlState'
 import { Help } from './Help'
+import { ShareLink } from './ShareLink'
 import { Checkbox } from './ui/checkbox'
 import {
   Combobox,
@@ -29,7 +30,6 @@ import {
   FieldLabel,
   FieldSet,
 } from './ui/field'
-import { Input } from './ui/input'
 import {
   Select,
   SelectContent,
@@ -284,14 +284,7 @@ export function Controls({ view, range, extent, dispatch }: ControlsProps) {
             <FieldLabel htmlFor={`${id}-share`}>
               {copy.controls.shareLink}
             </FieldLabel>
-            <Input
-              id={`${id}-share`}
-              readOnly
-              value={shareLink}
-              onFocus={(event) => {
-                event.currentTarget.select()
-              }}
-            />
+            <ShareLink id={`${id}-share`} link={shareLink} />
             <FieldDescription>
               {copy.controls.shareLinkDescription}
             </FieldDescription>

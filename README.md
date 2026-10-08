@@ -21,6 +21,13 @@ npm ci
 npm run dev
 ```
 
+The component tests and the smoke test run in Chromium, which Playwright downloads separately.
+Install it once, and again after Playwright is upgraded:
+
+```bash
+npx playwright install chromium
+```
+
 ## Commands
 
 | Command                | Purpose                                      |

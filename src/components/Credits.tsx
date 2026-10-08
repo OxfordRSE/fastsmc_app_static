@@ -1,38 +1,80 @@
 // Ports the credit line in App.js from the original frontend
 // (OxfordRSE/fastsmc_app_frontend), adding the dataset's DOI and the
-// attribution that the map boundaries' licence requires.
+// attribution that the map boundaries' licence requires. Only the copyright
+// line shows in the panel; the full credits open in a dialog, as the Open
+// Government Licence lets the attribution be linked rather than always shown.
 
-import { dataUrl } from '../content/links'
+import { dataUrl, mapLicenceUrl } from '../content/links'
 import { useCopy } from '../content/useCopy'
 import { LinkedText } from './LinkedText'
+import { Button } from './ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog'
 
 /**
- * The credits at the foot of the side panel.
+ * The credits at the foot of the side panel: a copyright line, and a button
+ * opening the full credits.
  *
- * @returns The authors, the data's DOI and the map's attribution.
+ * @returns The copyright line and the button; the dialog opens over the page.
  */
 export function Credits() {
   const copy = useCopy()
   return (
-    <footer className="flex flex-col gap-2 border-t pt-4 text-xs text-muted-foreground">
-      <p>
-        <span className="block">{copy.credits.copyright}</span>
-        <span className="block">{copy.credits.developers}</span>
-      </p>
-      <p>
-        <LinkedText
-          text={copy.credits.data}
-          link={copy.credits.dataLink}
-          href={dataUrl}
-        />
-      </p>
-      <p>
-        {copy.credits.map.map((line) => (
-          <span key={line} className="block">
-            {line}
-          </span>
-        ))}
-      </p>
+    <footer className="flex items-center justify-between gap-2 border-t pt-4 text-xs text-muted-foreground">
+      <p>{copy.credits.copyright}</p>
+      <Dialog>
+        <DialogTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="xs"
+              className="text-muted-foreground"
+            />
+          }
+        >
+          {copy.credits.open}
+        </DialogTrigger>
+        <DialogContent
+          closeLabel={copy.info.close}
+          className="max-h-[85dvh] overflow-y-auto sm:max-w-lg"
+        >
+          <DialogHeader>
+            <DialogTitle>{copy.credits.title}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            <p>{copy.credits.copyright}</p>
+            <p>{copy.credits.developers}</p>
+            <p>
+              <LinkedText
+                text={copy.credits.data}
+                link={copy.credits.dataLink}
+                href={dataUrl}
+              />
+            </p>
+            <p>
+              {copy.credits.map.map((line) => (
+                <span key={line} className="block">
+                  {line}
+                </span>
+              ))}
+            </p>
+            <p>
+              <LinkedText
+                text={copy.credits.mapLicence}
+                link={copy.credits.mapLicenceLink}
+                href={mapLicenceUrl}
+              />
+            </p>
+          </div>
+          <DialogFooter showCloseButton closeLabel={copy.info.close} />
+        </DialogContent>
+      </Dialog>
     </footer>
   )
 }

@@ -2,6 +2,7 @@ import { expect, it, vi } from 'vitest'
 import { page } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { en } from '../content/en'
+import { hoveredColour } from './palette'
 import { type ChartEntry, TopPostcodesChart } from './TopPostcodesChart'
 
 const entries: ChartEntry[] = [
@@ -90,10 +91,10 @@ it('reports the bar under the pointer', async () => {
   expect(onHover).toHaveBeenCalledWith('WS')
 })
 
-it('outlines only the hovered area', async () => {
+it('outlines only the hovered area, as the map does', async () => {
   const { group } = await renderChart('CV')
   expect(group('CV').querySelector('[data-bar]')?.getAttribute('stroke')).toBe(
-    'green',
+    hoveredColour,
   )
   expect(group('B').querySelector('[data-bar]')?.getAttribute('stroke')).toBe(
     'none',

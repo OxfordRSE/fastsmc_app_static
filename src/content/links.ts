@@ -11,3 +11,7 @@ export const paperUrl = 'https://doi.org/10.1038/s41467-020-19588-x'
 
 /** The published dataset the map shows. */
 export const dataUrl = 'https://doi.org/10.5281/zenodo.4012677'
+
+/** The licence of the map boundaries, which asks to be linked where possible. */
+export const mapLicenceUrl =
+  'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/'

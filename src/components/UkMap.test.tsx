@@ -95,12 +95,46 @@ describe('outlines', () => {
     await expect.element(outline('hovered')).toHaveAttribute('d', shapeOf('LL'))
   })
 
+  it('draws a wider halo under each outline', async () => {
+    const { screen } = await renderMap({ hovered: 'LL' })
+    for (const kind of ['selected', 'hovered']) {
+      const line = screen.container.querySelector(`[data-outline="${kind}"]`)
+      const halo = screen.container.querySelector(`[data-halo="${kind}"]`)
+      expect(halo?.getAttribute('d')).toBe(line?.getAttribute('d'))
+      expect(Number(halo?.getAttribute('stroke-width'))).toBeGreaterThan(
+        Number(line?.getAttribute('stroke-width')),
+      )
+    }
+  })
+
   it('draws no hover outline when nothing is hovered', async () => {
     const { screen } = await renderMap()
     expect(
       screen.container.querySelectorAll('[data-outline="hovered"]'),
     ).toHaveLength(0)
   })
+})
+
+it.each([
+  ['wider', 800],
+  ['narrower', 200],
+])('centres the map in a container %s than the map', async (_, width) => {
+  const { screen } = await renderMap({}, width)
+  const svg = screen.container.querySelector('svg')
+  if (!svg) throw new Error('No map drawn')
+  const box = svg.getBBox()
+  const margins = {
+    left: box.x,
+    right: width - (box.x + box.width),
+    top: box.y,
+    bottom: 600 - (box.y + box.height),
+  }
+  expect(margins.left).toBeCloseTo(margins.right, 0)
+  expect(margins.top).toBeCloseTo(margins.bottom, 0)
+  // At least the old app's 5% margin on every side.
+  expect(Math.min(...Object.values(margins))).toBeGreaterThanOrEqual(
+    0.05 * Math.min(width, 600) - 1,
+  )
 })
 
 it('resizes with its container', async () => {
