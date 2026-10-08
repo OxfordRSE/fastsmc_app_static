@@ -13,6 +13,15 @@ export default defineConfig({
   base: `${process.env.BASE_PATH ?? ''}/`,
   // Import aliases such as "@/" come from tsconfig "paths", so they are defined once.
   resolve: { tsconfigPaths: true },
+  // In kB, minified, not gzipped. The app is one chunk of about 670 kB: React,
+  // Base UI and the map's 120 kB of boundaries among it. The default of 500 would
+  // warn on every build; this leaves room to grow while still flagging a large
+  // new dependency.
+  build: { chunkSizeWarningLimit: 800 },
+  // Pre-bundle every Base UI part, used or not. Otherwise the first test run
+  // after adding a shadcn/ui component finds a new part, re-bundles mid-run and
+  // reloads, failing with "Invalid hook call" (two copies of React).
+  optimizeDeps: { include: ['@base-ui/react/*'] },
   plugins: [
     react(),
     tailwindcss(),
