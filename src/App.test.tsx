@@ -158,3 +158,48 @@ describe('the controls', () => {
     await expect.poll(() => window.location.search).toBe('?measure=genome')
   })
 })
+
+describe('the details panel', () => {
+  async function renderApp() {
+    const screen = await render(<App />)
+    await expect
+      .element(screen.getByRole('heading', { name: en.appTitle }))
+      .toBeVisible()
+    const map = screen.container.querySelector('main > div')
+    if (!map) throw new Error('No map')
+    const area = (code: string) => {
+      const element = map.querySelector(`[data-code="${code}"]`)
+      if (!element) throw new Error(`No area ${code}`)
+      return page.elementLocator(element)
+    }
+    await expect.element(area('B')).toHaveAttribute('d')
+    return { screen, map, area }
+  }
+
+  it('compares the area under the pointer on the map', async () => {
+    const { screen, area } = await renderApp()
+    await area('B').hover()
+    await expect
+      .element(
+        screen.getByText(
+          en.details.between(
+            en.controls.area('Harrow', 'HA'),
+            en.controls.area('Birmingham', 'B'),
+          ),
+        ),
+      )
+      .toBeVisible()
+  })
+
+  it('outlines on the map the area of the bar under the pointer', async () => {
+    const { screen, map } = await renderApp()
+    const bar = screen.container.querySelector('aside [data-code]')
+    if (!bar) throw new Error('No bars')
+    await page.elementLocator(bar).hover()
+    const code = bar.getAttribute('data-code')
+    const outline = map.querySelector('[data-outline="hovered"]')
+    expect(outline?.getAttribute('d')).toBe(
+      map.querySelector(`[data-code="${String(code)}"]`)?.getAttribute('d'),
+    )
+  })
+})

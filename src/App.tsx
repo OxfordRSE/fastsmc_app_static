@@ -1,5 +1,6 @@
 import { useEffect, useReducer } from 'react'
 import { Controls } from './components/Controls'
+import { PostcodeInfo } from './components/PostcodeInfo'
 import { UkMap } from './components/UkMap'
 import { Spinner } from './components/ui/spinner'
 import { useCopy } from './content/useCopy'
@@ -52,13 +53,14 @@ export default function App() {
   if (from === undefined) {
     throw new Error(`No data row for selected postcode ${view.postcode}`)
   }
-  const values = relatedness(
-    matrices.matrices[view.measure],
-    from,
-    generationsFromYears(view.years),
-  )
+  const matrix = matrices.matrices[view.measure]
+  const generations = generationsFromYears(view.years)
+  const values = relatedness(matrix, from, generations)
   const rangeValues = [...values.values()]
   const range = colourRange(view.range, rangeValues)
+  const hover = (postcode: string) => {
+    dispatch({ type: 'hover-postcode', postcode })
+  }
 
   return (
     // Narrow screens: the map, then the panel below it, scrolling as one page.
@@ -73,9 +75,7 @@ export default function App() {
           onSelect={(postcode) => {
             dispatch({ type: 'select-postcode', postcode })
           }}
-          onHover={(postcode) => {
-            dispatch({ type: 'hover-postcode', postcode })
-          }}
+          onHover={hover}
         />
       </div>
       <aside className="flex flex-col gap-6 border-t p-4 md:w-96 md:shrink-0 md:overflow-y-auto md:border-t-0 md:border-l">
@@ -85,6 +85,13 @@ export default function App() {
           range={range}
           extent={valueExtent(rangeValues)}
           dispatch={dispatch}
+        />
+        <PostcodeInfo
+          selected={view.postcode}
+          hovered={hovered}
+          values={matrix}
+          generations={generations}
+          onHover={hover}
         />
       </aside>
     </main>

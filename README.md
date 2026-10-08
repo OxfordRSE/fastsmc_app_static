@@ -79,6 +79,12 @@ npx shadcn@4.21.4 add slider
 Review the diff before committing.
 The CLI may try to add `shadcn` as a dependency or add `@import "shadcn/tailwind.css"` to `src/index.css`; revert both, since that stylesheet is vendored as described below.
 
+### Charts
+
+The top-10 chart is drawn by hand as SVG, with d3-scale computing its layout and axis ticks, in the same way as the map.
+For one small chart this avoids a large dependency.
+If more charts are added later, adopt [Recharts](https://recharts.github.io/) instead: it is the most widely used React charting library, and shadcn/ui's chart component builds on it.
+
 ### Upgrading the vendored stylesheet
 
 shadcn ships a stylesheet that its components rely on, inside the CLI package.

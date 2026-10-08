@@ -72,6 +72,25 @@ export interface Copy {
     /** Name of a help button, for screen readers, such as "Help: Measure". */
     readonly help: (topic: string) => string
   }
+  /** The details box below the controls. */
+  readonly details: {
+    /** Labels the relatedness of the selected area to itself. */
+    readonly within: (area: string) => string
+    /** Labels the relatedness of the selected area to the area under the pointer. */
+    readonly between: (selected: string, hovered: string) => string
+    /** Shown until the pointer has been over an area. */
+    readonly hoverPrompt: string
+    /** Shown in place of a value for an area without data. */
+    readonly noData: string
+    /** A value with its 95% interval. */
+    readonly estimate: (mean: number, lower: number, upper: number) => string
+    /** Heading of the chart. */
+    readonly topAreas: string
+    /** Describes the chart for screen readers. */
+    readonly chartLabel: (area: string) => string
+    /** One bar of the chart, for screen readers. */
+    readonly chartEntry: (area: string, estimate: string) => string
+  }
   /** Explanations shown in the help popovers. */
   readonly help: {
     /** Overview of what the map shows. */
@@ -130,6 +149,20 @@ export const en: Copy = {
     shareLink: 'Copy parameters',
     shareLinkDescription: 'Use this URL to save your current parameters.',
     help: (topic) => `Help: ${topic}`,
+  },
+
+  details: {
+    within: (area) => `Within ${area}`,
+    between: (selected, hovered) => `Between ${selected} and ${hovered}`,
+    hoverPrompt:
+      'Point at an area on the map, or a bar in the chart, to compare it with the selected area.',
+    noData: 'no data',
+    estimate: (mean, lower, upper) =>
+      `${value.format(mean)} (95% interval ${value.format(lower)} to ${value.format(upper)})`,
+    topAreas: 'Top 10 most related areas',
+    chartLabel: (area) =>
+      `Bar chart of the 10 areas most related to ${area}, with 95% intervals`,
+    chartEntry: (area, estimate) => `${area}: ${estimate}`,
   },
 
   help: {
