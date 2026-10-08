@@ -30,3 +30,16 @@ const postcodeTopology = topology as unknown as PostcodeTopology
 /** Every postcode area on the map, as GeoJSON features. */
 export const postcodeAreas: FeatureCollection<Geometry, AreaProperties> =
   feature(postcodeTopology, postcodeTopology.objects.postcode_areas)
+
+/** Each area's properties, keyed by its code. */
+export const areasByCode: ReadonlyMap<string, AreaProperties> = new Map(
+  postcodeAreas.features.map(({ properties }) => [properties.code, properties]),
+)
+
+/** Each area's properties, keyed by its row and column in the matrices. */
+export const areasByIndex: ReadonlyMap<number, AreaProperties> = new Map(
+  postcodeAreas.features.map(({ properties }) => [
+    properties.matrixIndex,
+    properties,
+  ]),
+)

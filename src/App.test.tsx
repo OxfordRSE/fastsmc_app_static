@@ -62,6 +62,47 @@ it.each([
   expect(window.location.search).toBe(after)
 })
 
+describe('the layout', () => {
+  const initialViewport = [window.innerWidth, window.innerHeight] as const
+
+  afterEach(async () => {
+    await page.viewport(...initialViewport)
+  })
+
+  async function renderAt(width: number) {
+    await page.viewport(width, 800)
+    const screen = await render(<App />)
+    await expect
+      .element(screen.getByRole('heading', { name: en.appTitle }))
+      .toBeVisible()
+    const map = screen.container.querySelector('svg')
+    if (!map) throw new Error('No map')
+    const panel = screen.getByRole('complementary').element()
+    return { map, panel }
+  }
+
+  it('puts the panel beside the map on wide screens', async () => {
+    const { map, panel } = await renderAt(1200)
+    await expect
+      .poll(() => map.getBoundingClientRect().width)
+      .toBeGreaterThan(0)
+    const mapBox = map.getBoundingClientRect()
+    const panelBox = panel.getBoundingClientRect()
+    expect(panelBox.left).toBeGreaterThanOrEqual(mapBox.right)
+    expect(panelBox.top).toBe(0)
+    expect(panelBox.height).toBe(800)
+  })
+
+  it('puts the panel below the map on narrow screens', async () => {
+    const { map, panel } = await renderAt(400)
+    await expect.poll(() => map.getBoundingClientRect().width).toBe(400)
+    const mapBox = map.getBoundingClientRect()
+    const panelBox = panel.getBoundingClientRect()
+    expect(panelBox.top).toBeGreaterThanOrEqual(mapBox.bottom)
+    expect(panelBox.width).toBe(400)
+  })
+})
+
 describe('the map', () => {
   async function renderApp() {
     const screen = await render(<App />)
@@ -89,5 +130,91 @@ describe('the map', () => {
     await expect.poll(() => window.location.search).toBe('?postcode=B')
     await area('CR').click()
     expect(window.location.search).toBe('?postcode=B')
+  })
+})
+
+describe('the controls', () => {
+  async function renderApp() {
+    const screen = await render(<App />)
+    await expect
+      .element(screen.getByRole('heading', { name: en.appTitle }))
+      .toBeVisible()
+    return screen
+  }
+
+  it('select an area typed into the postcode entry', async () => {
+    const screen = await renderApp()
+    await screen
+      .getByRole('combobox', { name: en.controls.postcode })
+      .fill('(ZE)')
+    await screen.getByRole('option', { name: /\(ZE\)$/ }).click()
+    await expect.poll(() => window.location.search).toBe('?postcode=ZE')
+  })
+
+  it('change the measure', async () => {
+    const screen = await renderApp()
+    await screen.getByRole('combobox', { name: en.controls.measure }).click()
+    await screen.getByRole('option', { name: en.measures.genome }).click()
+    await expect.poll(() => window.location.search).toBe('?measure=genome')
+  })
+})
+
+it('shows the map attribution, the data credit and more information beside the map', async () => {
+  const screen = await render(<App />)
+  for (const line of en.credits.map) {
+    await expect
+      .element(screen.getByText(line, { exact: true }))
+      .toBeInTheDocument()
+  }
+  await expect
+    .element(screen.getByRole('link', { name: en.credits.dataLink }))
+    .toBeInTheDocument()
+  await expect
+    .element(screen.getByRole('button', { name: en.info.open }))
+    .toBeInTheDocument()
+})
+
+describe('the details panel', () => {
+  async function renderApp() {
+    const screen = await render(<App />)
+    await expect
+      .element(screen.getByRole('heading', { name: en.appTitle }))
+      .toBeVisible()
+    const map = screen.container.querySelector('main > div')
+    if (!map) throw new Error('No map')
+    const area = (code: string) => {
+      const element = map.querySelector(`[data-code="${code}"]`)
+      if (!element) throw new Error(`No area ${code}`)
+      return page.elementLocator(element)
+    }
+    await expect.element(area('B')).toHaveAttribute('d')
+    return { screen, map, area }
+  }
+
+  it('compares the area under the pointer on the map', async () => {
+    const { screen, area } = await renderApp()
+    await area('B').hover()
+    await expect
+      .element(
+        screen.getByText(
+          en.details.between(
+            en.controls.area('Harrow', 'HA'),
+            en.controls.area('Birmingham', 'B'),
+          ),
+        ),
+      )
+      .toBeVisible()
+  })
+
+  it('outlines on the map the area of the bar under the pointer', async () => {
+    const { screen, map } = await renderApp()
+    const bar = screen.container.querySelector('aside [data-code]')
+    if (!bar) throw new Error('No bars')
+    await page.elementLocator(bar).hover()
+    const code = bar.getAttribute('data-code')
+    const outline = map.querySelector('[data-outline="hovered"]')
+    expect(outline?.getAttribute('d')).toBe(
+      map.querySelector(`[data-code="${String(code)}"]`)?.getAttribute('d'),
+    )
   })
 })

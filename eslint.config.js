@@ -13,10 +13,14 @@ const textAttributes =
 const useCopyInstead =
   'User-visible text belongs in src/content/en.ts; read it with useCopy().'
 
+// shadcn/ui components, copied in by its CLI and kept as generated (see README).
+const vendoredUi = 'src/components/ui/**'
+
 export default defineConfig([
   globalIgnores(['dist']),
   {
     files: ['**/*.{ts,tsx}'],
+    ignores: [vendoredUi],
     extends: [
       js.configs.recommended,
       tseslint.configs.strictTypeChecked,
@@ -33,9 +37,19 @@ export default defineConfig([
     },
   },
   {
+    // Vendored components: only the basic bug-catching rules, not the strict or style ones.
+    files: [vendoredUi],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+      reactHooks.configs.flat.recommended,
+    ],
+    languageOptions: { globals: globals.browser },
+  },
+  {
     // TSDoc on every export of the app's source; tests are documented by their names.
     files: ['src/**/*.{ts,tsx}'],
-    ignores: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    ignores: ['src/**/*.test.ts', 'src/**/*.test.tsx', vendoredUi],
     extends: [jsdoc.configs['flat/recommended-typescript-error']],
     rules: {
       'jsdoc/require-jsdoc': [
