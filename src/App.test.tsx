@@ -132,3 +132,29 @@ describe('the map', () => {
     expect(window.location.search).toBe('?postcode=B')
   })
 })
+
+describe('the controls', () => {
+  async function renderApp() {
+    const screen = await render(<App />)
+    await expect
+      .element(screen.getByRole('heading', { name: en.appTitle }))
+      .toBeVisible()
+    return screen
+  }
+
+  it('select an area typed into the postcode entry', async () => {
+    const screen = await renderApp()
+    await screen
+      .getByRole('combobox', { name: en.controls.postcode })
+      .fill('(ZE)')
+    await screen.getByRole('option', { name: /\(ZE\)$/ }).click()
+    await expect.poll(() => window.location.search).toBe('?postcode=ZE')
+  })
+
+  it('change the measure', async () => {
+    const screen = await renderApp()
+    await screen.getByRole('combobox', { name: en.controls.measure }).click()
+    await screen.getByRole('option', { name: en.measures.genome }).click()
+    await expect.poll(() => window.location.search).toBe('?measure=genome')
+  })
+})

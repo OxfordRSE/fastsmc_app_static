@@ -1,10 +1,11 @@
 import { useEffect, useReducer } from 'react'
+import { Controls } from './components/Controls'
 import { UkMap } from './components/UkMap'
 import { Spinner } from './components/ui/spinner'
 import { useCopy } from './content/useCopy'
 import { useMatrices } from './hooks/useMatrices'
 import { appReducer, initialState } from './lib/appState'
-import { colourRange } from './lib/colourRange'
+import { colourRange, valueExtent } from './lib/colourRange'
 import { generationsFromYears, indexOf, relatedness } from './lib/postcodeData'
 import { serialiseViewState } from './lib/urlState'
 
@@ -56,7 +57,8 @@ export default function App() {
     from,
     generationsFromYears(view.years),
   )
-  const range = colourRange(view.range, [...values.values()])
+  const rangeValues = [...values.values()]
+  const range = colourRange(view.range, rangeValues)
 
   return (
     // Narrow screens: the map, then the panel below it, scrolling as one page.
@@ -76,8 +78,14 @@ export default function App() {
           }}
         />
       </div>
-      <aside className="border-t p-4 md:w-96 md:shrink-0 md:overflow-y-auto md:border-t-0 md:border-l">
+      <aside className="flex flex-col gap-6 border-t p-4 md:w-96 md:shrink-0 md:overflow-y-auto md:border-t-0 md:border-l">
         <h1 className="text-2xl font-semibold">{copy.appTitle}</h1>
+        <Controls
+          view={view}
+          range={range}
+          extent={valueExtent(rangeValues)}
+          dispatch={dispatch}
+        />
       </aside>
     </main>
   )

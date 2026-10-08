@@ -29,6 +29,49 @@ export interface Copy {
     readonly percentiles: string
     readonly custom: string
   }
+  /** Labels and descriptions of the controls in the side panel. */
+  readonly controls: {
+    /** Label of the measure selector. */
+    readonly measure: string
+    /** Label of the time slider; the help text refers to it by this name. */
+    readonly years: string
+    /** Explains the time slider. */
+    readonly yearsDescription: string
+    /** The time slider's current value, such as "600 years". */
+    readonly yearsValue: (years: number) => string
+    /** Label of the postcode entry. */
+    readonly postcode: string
+    /** Explains the postcode entry. */
+    readonly postcodeDescription: string
+    /** Shown in the empty postcode entry. */
+    readonly postcodePlaceholder: string
+    /** Shown when no area matches what was typed. */
+    readonly noMatch: string
+    /** An area in the postcode list, such as "Birmingham (B)". */
+    readonly area: (name: string, code: string) => string
+    /** An area in the postcode list that has no data and cannot be chosen. */
+    readonly areaWithoutData: (name: string, code: string) => string
+    /** Label of the checkbox revealing the advanced settings; the help text refers to it. */
+    readonly showAdvanced: string
+    /** Heading of the colour range settings. */
+    readonly colourRange: string
+    /** Explains the colour range settings. */
+    readonly colourRangeDescription: string
+    /** Label of the colour range mode selector. */
+    readonly colourRangeMode: string
+    /** Name of the colour range slider's lower handle, for screen readers. */
+    readonly lightest: string
+    /** Name of the colour range slider's upper handle, for screen readers. */
+    readonly darkest: string
+    /** The colour range slider's current values. */
+    readonly rangeValues: (low: number, high: number) => string
+    /** Label of the shareable link to the current view. */
+    readonly shareLink: string
+    /** Explains the shareable link. */
+    readonly shareLinkDescription: string
+    /** Name of a help button, for screen readers, such as "Help: Measure". */
+    readonly help: (topic: string) => string
+  }
   /** Explanations shown in the help popovers. */
   readonly help: {
     /** Overview of what the map shows. */
@@ -42,6 +85,10 @@ export interface Copy {
 
 // One sentence per line, joined for display, so edits produce clean diffs.
 const sentences = (...lines: string[]) => lines.join(' ')
+
+// Relatedness values span several orders of magnitude, so show 2 significant figures.
+const value = new Intl.NumberFormat('en-GB', { maximumSignificantDigits: 2 })
+const years = new Intl.NumberFormat('en-GB')
 
 /** English text. */
 export const en: Copy = {
@@ -59,6 +106,30 @@ export const en: Copy = {
     'second-largest': 'second largest',
     percentiles: '95% percentiles',
     custom: 'set by user',
+  },
+
+  controls: {
+    measure: 'Measure',
+    years: 'Time threshold',
+    yearsDescription: 'Ancestry calculated this many years in the past.',
+    yearsValue: (count) => `${years.format(count)} years`,
+    postcode: 'Postcode area',
+    postcodeDescription: 'Type an area code, such as S or HA, or a place name.',
+    postcodePlaceholder: 'Enter postcode...',
+    noMatch: 'No matching area.',
+    area: (name, code) => `${name} (${code})`,
+    areaWithoutData: (name, code) => `${name} (${code}): no data`,
+    showAdvanced: 'Show advanced',
+    colourRange: 'Colour range',
+    colourRangeDescription:
+      'Select the range of colours to display in the map.',
+    colourRangeMode: 'Mode',
+    lightest: 'Value shown in the lightest colour',
+    darkest: 'Value shown in the darkest colour',
+    rangeValues: (low, high) => `${value.format(low)} to ${value.format(high)}`,
+    shareLink: 'Copy parameters',
+    shareLinkDescription: 'Use this URL to save your current parameters.',
+    help: (topic) => `Help: ${topic}`,
   },
 
   help: {
