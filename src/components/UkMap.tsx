@@ -8,7 +8,6 @@ import { useMemo } from 'react'
 import { useElementSize } from '../hooks/useElementSize'
 import type { ColourRange } from '../lib/colourRange'
 import { postcodeAreas } from '../lib/postcodeMap'
-import styles from './UkMap.module.css'
 
 const lightest = 'white'
 const darkest = 'blue'
@@ -92,7 +91,7 @@ export function UkMap({
   }
 
   return (
-    <div ref={ref} className={styles.map}>
+    <div ref={ref} className="size-full">
       <svg width={width} height={height}>
         {postcodeAreas.features.map(({ properties }) => {
           const { code, matrixIndex, hasData } = properties
@@ -102,7 +101,7 @@ export function UkMap({
               key={code}
               d={outlines.get(code)}
               data-code={code}
-              className={hasData ? styles.selectable : undefined}
+              className={hasData ? 'cursor-pointer' : undefined}
               fill={hasData && value !== undefined ? colour(value) : noData}
               stroke={border}
               strokeWidth={1}

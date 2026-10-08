@@ -1,5 +1,4 @@
 import { useEffect, useReducer } from 'react'
-import styles from './App.module.css'
 import { UkMap } from './components/UkMap'
 import { useCopy } from './content/useCopy'
 import { useMatrices } from './hooks/useMatrices'
@@ -51,9 +50,9 @@ export default function App() {
   const range = colourRange(view.range, [...values.values()])
 
   return (
-    <div className={styles.app}>
-      <h1>{copy.appTitle}</h1>
-      <div className={styles.map}>
+    <div className="flex h-dvh flex-col">
+      <h1 className="m-4 text-3xl font-bold">{copy.appTitle}</h1>
+      <div className="min-h-0 flex-1">
         <UkMap
           values={values}
           range={range}

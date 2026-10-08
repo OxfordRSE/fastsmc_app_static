@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { playwright } from '@vitest/browser-playwright'
 import { defineConfig } from 'vitest/config'
@@ -12,6 +13,7 @@ export default defineConfig({
   base: `${process.env.BASE_PATH ?? ''}/`,
   plugins: [
     react(),
+    tailwindcss(),
     {
       // The page title is copy too, so it comes from src/content/en.ts.
       name: 'page-title-from-copy',
@@ -35,6 +37,8 @@ export default defineConfig({
         test: {
           name: 'browser',
           include: ['src/**/*.test.tsx'],
+          // Tailwind's classes only work with its stylesheet, which main.tsx loads in the app.
+          setupFiles: ['./src/index.css'],
           browser: {
             enabled: true,
             provider: playwright(),
