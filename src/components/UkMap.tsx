@@ -4,11 +4,12 @@
 // in its box; and the red and green outlines became colour-blind-safe ones
 // with halos (see palette.ts).
 
-import { geoAlbers, geoPath } from 'd3-geo'
+import { geoPath } from 'd3-geo'
 import { scaleLinear } from 'd3-scale'
 import { useMemo } from 'react'
 import { useElementSize } from '../hooks/useElementSize'
 import type { ColourRange } from '../lib/colourRange'
+import { mapProjection } from '../lib/mapLayout'
 import { postcodeAreas } from '../lib/postcodeMap'
 import {
   border,
@@ -55,21 +56,7 @@ export function UkMap({
 
   const outlines = useMemo(() => {
     if (width === 0 || height === 0) return new Map<string, string>()
-    const margin = 0.05 * Math.min(width, height)
-    const projection = geoAlbers()
-      .center([5, 54.4])
-      .rotate([4.4, 0])
-      .parallels([50, 60])
-      // Centred, with a margin of 5% of the smaller dimension on every side.
-      // The original fitted the map to the top-left 90% of the box.
-      .fitExtent(
-        [
-          [margin, margin],
-          [width - margin, height - margin],
-        ],
-        postcodeAreas,
-      )
-    const path = geoPath(projection)
+    const path = geoPath(mapProjection(width, height))
     return new Map(
       postcodeAreas.features.map((area) => [
         area.properties.code,
