@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { page } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import App from './App'
+import { palettes } from './components/palette'
 import { en } from './content/en'
 
 // The test page's URL carries Vitest's own parameters, and the app rewrites the
@@ -231,11 +232,11 @@ it('reads a custom colour range in percent of the selected area itself', async (
     .toBeVisible()
   const harrow = screen.container.querySelector('main > div [data-code="HA"]')
   if (!harrow) throw new Error('No HA')
-  // HA is 100% of itself, the top of a 0% to 100% range: the darkest fill.
-  // Read as raw values instead, its 0.003 or so would be almost white.
+  // HA is 100% of itself, the top of a 0% to 100% range: the scale's high end.
+  // Read as raw values instead, its 0.003 or so would be at the low end.
   await expect
     .element(page.elementLocator(harrow))
-    .toHaveAttribute('fill', 'rgb(0, 0, 255)')
+    .toHaveAttribute('fill', palettes.light.ramp(1))
   // The range is clamped to the values present, so only its top is certain.
   await screen.getByRole('checkbox', { name: en.controls.showAdvanced }).click()
   await expect.element(screen.getByText(/ to 100%$/)).toBeVisible()

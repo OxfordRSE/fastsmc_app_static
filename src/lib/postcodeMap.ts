@@ -3,8 +3,8 @@
 // calculate_index_mapping give way to the GeoLytix boundaries, where each shape
 // already carries its matrix index.
 
-import type { FeatureCollection, Geometry } from 'geojson'
-import { feature } from 'topojson-client'
+import type { FeatureCollection, Geometry, MultiLineString } from 'geojson'
+import { feature, mesh } from 'topojson-client'
 import type { GeometryCollection, Topology } from 'topojson-specification'
 import topology from '../data/uk-postcode-areas.topo.json'
 
@@ -30,6 +30,18 @@ const postcodeTopology = topology as unknown as PostcodeTopology
 /** Every postcode area on the map, as GeoJSON features. */
 export const postcodeAreas: FeatureCollection<Geometry, AreaProperties> =
   feature(postcodeTopology, postcodeTopology.objects.postcode_areas)
+
+/**
+ * Every boundary between areas, and the coastline, each line once, as one shape.
+ *
+ * @remarks
+ * Drawn separately from the areas' fills, as d3 maps do, so a shared boundary
+ * is one line rather than two overlapping edges.
+ */
+export const boundaries: MultiLineString = mesh(
+  postcodeTopology,
+  postcodeTopology.objects.postcode_areas,
+)
 
 /** Each area's properties, keyed by its code. */
 export const areasByCode: ReadonlyMap<string, AreaProperties> = new Map(

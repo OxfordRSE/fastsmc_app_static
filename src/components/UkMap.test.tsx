@@ -7,6 +7,7 @@ import type { Inspection } from '../lib/appState'
 import { maxZoom, zoomStep } from '../lib/mapZoom'
 import { indexOf } from '../lib/postcodeData'
 import { areasByCode } from '../lib/postcodeMap'
+import { borderColour, palettes } from './palette'
 import { UkMap, type UkMapProps } from './UkMap'
 
 function indexFor(postcode: string): number {
@@ -58,12 +59,12 @@ describe('colours', () => {
   ])
 
   it.each([
-    ['the lowest value', 'HA', 'rgb(255, 255, 255)'],
-    ['a middle value', 'B', 'rgb(128, 128, 255)'],
-    ['the highest value', 'LL', 'rgb(0, 0, 255)'],
-    ['a value beyond the range, clamped', 'ZE', 'rgb(0, 0, 255)'],
-    ['an area with no value given', 'KW', '#c8c8c8'],
-    ['an area without data, whatever its value', 'CR', '#c8c8c8'],
+    ['the lowest value', 'HA', palettes.light.ramp(0)],
+    ['a middle value', 'B', palettes.light.ramp(0.5)],
+    ['the highest value', 'LL', palettes.light.ramp(1)],
+    ['a value beyond the range, clamped', 'ZE', palettes.light.ramp(1)],
+    ['an area with no value given', 'KW', palettes.light.noData],
+    ['an area without data, whatever its value', 'CR', palettes.light.noData],
   ])('shades %s', async (_, code, fill) => {
     const { area } = await renderMap({ values })
     await expect.element(area(code)).toHaveAttribute('fill', fill)
@@ -289,6 +290,18 @@ describe('for screen readers', () => {
   })
 })
 
+it('draws every boundary and the coastline once, in grey, over the fills', async () => {
+  const { screen } = await renderMap()
+  const lines = screen.container.querySelectorAll('[data-boundaries]')
+  expect(lines).toHaveLength(1)
+  expect(lines[0]?.getAttribute('stroke')).toBe(borderColour)
+  expect(lines[0]?.getAttribute('d')).toMatch(/^M/)
+  // The areas themselves have no outline of their own to double it.
+  for (const area of screen.container.querySelectorAll('path[data-code]')) {
+    expect(area.getAttribute('stroke')).toBeNull()
+  }
+})
+
 describe('outlines', () => {
   it('outlines the selected and inspected areas', async () => {
     const { area, outline } = await renderMap({
@@ -476,7 +489,7 @@ describe('zoom', () => {
 
   it('keeps outlines the same width at any zoom', async () => {
     const { svg } = await renderZoomable()
-    for (const path of svg.querySelectorAll('path')) {
+    for (const path of svg.querySelectorAll('path[stroke]')) {
       expect(path.getAttribute('vector-effect')).toBe('non-scaling-stroke')
     }
   })

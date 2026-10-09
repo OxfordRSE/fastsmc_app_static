@@ -21,6 +21,14 @@ import {
 import { useCopy } from '../content/useCopy'
 import { useElementSize } from '../hooks/useElementSize'
 import { useMapZoom } from '../hooks/useMapZoom'
+import { usePalette } from '../hooks/usePalette'
+import {
+  borderColour,
+  inspectedColour,
+  inspectedHalo,
+  selectedColour,
+  selectedHalo,
+} from './palette'
 import type { InspectMethod, Inspection } from '../lib/appState'
 import type { ColourRange } from '../lib/colourRange'
 import { mapProjection } from '../lib/mapLayout'
@@ -30,18 +38,8 @@ import {
   nearestInDirection,
 } from '../lib/mapNavigation'
 import { isOutOfView, zoomStep } from '../lib/mapZoom'
-import { areasByCode, postcodeAreas } from '../lib/postcodeMap'
+import { areasByCode, boundaries, postcodeAreas } from '../lib/postcodeMap'
 import { Button } from './ui/button'
-import {
-  border,
-  darkest,
-  inspectedColour,
-  inspectedHalo,
-  lightest,
-  noData,
-  selectedColour,
-  selectedHalo,
-} from './palette'
 
 /** Props for {@link UkMap}. */
 export interface UkMapProps {
@@ -101,6 +99,7 @@ export function UkMap({
   onClearInspection,
 }: UkMapProps) {
   const copy = useCopy()
+  const palette = usePalette()
   const keysId = useId()
   const optionId = (code: string) => `${keysId}-${code}`
   const [ref, { width, height }] = useElementSize<HTMLDivElement>()
@@ -113,10 +112,12 @@ export function UkMap({
   const pointerType = useRef('')
   const typed = useRef({ letters: '', at: 0 })
 
-  const { outlines, bounds, centres } = useMemo(() => {
+  const { outlines, bounds, centres, boundaryLines } = useMemo(() => {
     const path = geoPath(mapProjection(width, height))
-    const drawn = width > 0 && height > 0 ? postcodeAreas.features : []
+    const sized = width > 0 && height > 0
+    const drawn = sized ? postcodeAreas.features : []
     return {
+      boundaryLines: sized ? (path(boundaries) ?? '') : '',
       outlines: new Map(
         drawn.map((area) => [area.properties.code, path(area) ?? '']),
       ),
@@ -212,10 +213,9 @@ export function UkMap({
     if (event.target === event.currentTarget) onClearInspection()
   }
 
-  const colour = scaleLinear<string>()
-    .domain([range.low, range.high])
-    .range([lightest, darkest])
-    .clamp(true)
+  // Position on the colour scale, from 0 at its low end to 1 at its high end.
+  const position = scaleLinear().domain([range.low, range.high]).clamp(true)
+  const colour = (value: number) => palette.ramp(position(value))
 
   // A wider halo underneath keeps the outline visible on light and dark fills.
   const outline = (
@@ -333,10 +333,7 @@ export function UkMap({
                 d={outlines.get(code)}
                 data-code={code}
                 className={hasData ? 'cursor-pointer' : undefined}
-                fill={known ? colour(value) : noData}
-                stroke={border}
-                strokeWidth={1}
-                vectorEffect="non-scaling-stroke"
+                fill={known ? colour(value) : palette.noData}
                 onPointerEnter={(event) => {
                   if (event.pointerType !== 'touch') onInspect(code, 'pointer')
                 }}
@@ -346,6 +343,17 @@ export function UkMap({
               />
             )
           })}
+          {/* Boundaries and coastline over the fills, each line drawn once. */}
+          <path
+            data-boundaries
+            d={boundaryLines}
+            fill="none"
+            stroke={borderColour}
+            strokeWidth={1}
+            vectorEffect="non-scaling-stroke"
+            pointerEvents="none"
+            aria-hidden
+          />
           {outline(
             inspected?.postcode,
             inspectedColour,

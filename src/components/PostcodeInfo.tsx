@@ -14,7 +14,12 @@ import {
   relativeInterval,
 } from '../lib/postcodeData'
 import { areasByCode, areasByIndex } from '../lib/postcodeMap'
-import { inspectedColour, selectedColour } from './palette'
+import {
+  inspectedColour,
+  inspectedHalo,
+  selectedColour,
+  selectedHalo,
+} from './palette'
 import { type ChartEntry, TopPostcodesChart } from './TopPostcodesChart'
 import { Button } from './ui/button'
 
@@ -40,14 +45,23 @@ export interface PostcodeInfoProps {
   readonly onClearInspection: () => void
 }
 
-function Swatch({ colour }: { readonly colour: string }) {
+function Swatch({
+  colour,
+  halo,
+}: {
+  readonly colour: string
+  readonly halo: string
+}) {
   return (
-    // Keeps its colour in forced-colours mode, on a light square so the black
-    // swatch shows against a dark theme, as the map's outlines keep theirs.
+    // Drawn like the map's outline, with its halo on either side, so it shows
+    // in both themes; and kept in forced-colours mode, as the map's are.
     <span
       aria-hidden
-      className="inline-block size-3 shrink-0 rounded-sm border-2 forced-color-adjust-none forced-colors:bg-background"
-      style={{ borderColor: colour }}
+      className="inline-block size-3 shrink-0 rounded-sm border-2 forced-color-adjust-none"
+      style={{
+        borderColor: colour,
+        boxShadow: `0 0 0 1px ${halo}, inset 0 0 0 1px ${halo}`,
+      }}
     />
   )
 }
@@ -137,7 +151,7 @@ export function PostcodeInfo({
         id={headingId}
         className="flex items-center gap-2 text-lg font-semibold"
       >
-        <Swatch colour={selectedColour} />
+        <Swatch colour={selectedColour} halo={selectedHalo} />
         {selectedLabel}
       </h2>
       {/* Heights reserved in lines of text, so the chart below never moves. */}
@@ -155,7 +169,7 @@ export function PostcodeInfo({
           <p className="text-muted-foreground">{copy.details.inspectPrompt}</p>
         ) : (
           <p className="flex items-baseline gap-2">
-            <Swatch colour={inspectedColour} />
+            <Swatch colour={inspectedColour} halo={inspectedHalo} />
             <span>
               {inspectedLine}
               {/* After a tap, which cannot hover, a second tap or this selects it. */}
