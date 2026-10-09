@@ -57,6 +57,16 @@ describe('en', () => {
   })
 
   it.each([
+    [46.44, '46.4%'],
+    [100, '100.0%'],
+    [0, '0.0%'],
+    [0.04, '<0.1%'],
+    [0.06, '0.1%'],
+  ])('writes %f percent in the table as %s', (value, text) => {
+    expect(en.dataTable.percent(value)).toBe(text)
+  })
+
+  it.each([
     [1, '1st'],
     [2, '2nd'],
     [3, '3rd'],

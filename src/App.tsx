@@ -1,6 +1,7 @@
 import { useEffect, useReducer } from 'react'
 import { Controls } from './components/Controls'
 import { Credits } from './components/Credits'
+import { DataTable } from './components/DataTable'
 import { InfoDialog } from './components/InfoDialog'
 import { Legend } from './components/Legend'
 import { PostcodeInfo } from './components/PostcodeInfo'
@@ -126,15 +127,24 @@ export default function App() {
           extent={extent}
           dispatch={dispatch}
         />
-        <PostcodeInfo
-          selected={view.postcode}
-          hovered={hovered}
-          values={matrix}
-          generations={generations}
-          onHover={hover}
-        />
-        <div>
-          <InfoDialog />
+        <div className="flex flex-col gap-3">
+          <PostcodeInfo
+            selected={view.postcode}
+            hovered={hovered}
+            values={matrix}
+            generations={generations}
+            onHover={hover}
+          />
+          {/* Side by side, to keep the panel short enough not to scroll. */}
+          <div className="flex flex-wrap gap-2">
+            <DataTable
+              selected={view.postcode}
+              values={matrix}
+              measure={view.measure}
+              years={view.years}
+            />
+            <InfoDialog />
+          </div>
         </div>
         <Credits />
       </aside>

@@ -119,8 +119,6 @@ export interface Copy {
     readonly hoveredNoData: (other: string) => string
     /** Shown until the pointer has been over an area. */
     readonly hoverPrompt: string
-    /** A value with its 95% interval. */
-    readonly estimate: (mean: number, lower: number, upper: number) => string
     /** Heading of the chart. */
     readonly topAreas: string
     /** States the unit of the chart, given the selected area's place name. */
@@ -129,6 +127,46 @@ export interface Copy {
     readonly chartLabel: (area: string) => string
     /** One bar of the chart, for screen readers. */
     readonly chartEntry: (area: string, percent: string) => string
+  }
+  /** The dialog listing every area's exact values: also the text alternative to the map and chart. */
+  readonly dataTable: {
+    /** Label of the button that opens the dialog. */
+    readonly open: string
+    /** The dialog's title, given the selected area's name and code. */
+    readonly title: (area: string) => string
+    /**
+     * Says what the table holds.
+     *
+     * @param selected - The selected area's place name.
+     * @param measure - The measure's name, as in {@link Copy.measures}.
+     * @param years - The time threshold in years.
+     */
+    readonly description: (
+      selected: string,
+      measure: string,
+      years: number,
+    ) => string
+    /** Heading of the rank column. */
+    readonly rank: string
+    /** Heading of the area column. */
+    readonly area: string
+    /** Heading of the percentage column, given the selected area's code, which keeps it short. */
+    readonly share: (code: string) => string
+    /** Headings of the mean column, for each measure. */
+    readonly mean: {
+      readonly ancestors: string
+      readonly genome: string
+    }
+    /** Heading of the interval column: a plain name, which the description explains. */
+    readonly interval: string
+    /** A percentage, such as "46.2%", given as a number of percent, finer than {@link Copy.percent}. */
+    readonly percent: (value: number) => string
+    /** A 95% interval in percent, such as "40.1%–53.2%". */
+    readonly intervalValue: (lower: number, upper: number) => string
+    /** An exact value of the measure, such as a mean. */
+    readonly value: (value: number) => string
+    /** Shown across the value columns of an area without data. */
+    readonly noData: string
   }
   /** The map's colour legend. */
   readonly legend: {
@@ -193,19 +231,28 @@ export interface Copy {
 // One sentence per line, joined for display, so edits produce clean diffs.
 const sentences = (...lines: string[]) => lines.join(' ')
 
-// Relatedness values span several orders of magnitude, so show 2 significant figures.
-const value = new Intl.NumberFormat('en-GB', { maximumSignificantDigits: 2 })
+// Exact values span several orders of magnitude, so show 3 significant figures.
+const value = new Intl.NumberFormat('en-GB', { maximumSignificantDigits: 3 })
 const years = new Intl.NumberFormat('en-GB')
-// Percentages of the selected area's link with itself, to the nearest 1%; a
-// small but non-zero value reads "<1%" rather than a misleading "0%".
-const percent = new Intl.NumberFormat('en-GB', {
-  style: 'percent',
-  maximumFractionDigits: 0,
-})
-const asPercent = (value: number) =>
-  value > 0 && value < 0.5
-    ? `<${percent.format(0.01)}`
-    : percent.format(value / 100)
+// Percentages of the selected area's link with itself, with a set number of
+// decimals; a small but non-zero value reads "<1%" (or "<0.1%") rather than a
+// misleading "0%".
+const percentTo = (fractionDigits: number) => {
+  const format = new Intl.NumberFormat('en-GB', {
+    style: 'percent',
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  })
+  const step = 10 ** -fractionDigits
+  return (value: number) =>
+    value > 0 && value < step / 2
+      ? `<${format.format(step / 100)}`
+      : format.format(value / 100)
+}
+// To the nearest 1% in the panel and the legend; to 0.1% in the table, where
+// many areas share a whole percentage.
+const asPercent = percentTo(0)
+const asTablePercent = percentTo(1)
 // Axis ticks, with as many decimals as their spacing needs.
 const asTickPercent = (value: number, fractionDigits: number) =>
   new Intl.NumberFormat('en-GB', {
@@ -274,14 +321,37 @@ export const en: Copy = {
     hoveredNoData: (other) => `${other}: no data.`,
     hoverPrompt:
       'Point at an area on the map, or a bar in the chart, to compare it with the selected area.',
-    estimate: (mean, lower, upper) =>
-      `${value.format(mean)} (95% interval ${value.format(lower)} to ${value.format(upper)})`,
     topAreas: 'Top 10 most related areas',
     chartUnit: (selected) =>
       `As a percentage of ${selected}'s link with itself.`,
     chartLabel: (area) =>
       `Bar chart of the 10 areas most related to ${area}, with error bars`,
     chartEntry: (area, share) => `${area}: ${share}`,
+  },
+
+  dataTable: {
+    open: 'Show all values',
+    title: (area) => `All values for ${area}`,
+    description: (selected, measure, count) =>
+      sentences(
+        `Every area's link with ${selected} over the past ${years.format(count)} years, measured by ${measure}.`,
+        `${selected} itself comes first, as the yardstick for the percentages; the other areas follow from the most related.`,
+        'The likely range is the 95% confidence interval of each percentage.',
+      ),
+    rank: 'Rank',
+    area: 'Area',
+    share: (code) => `% of ${code}'s link with itself`,
+    mean: {
+      ancestors: 'Mean number of ancestors',
+      genome: 'Mean percent shared genome',
+    },
+    interval: 'Likely range',
+    percent: asTablePercent,
+    // An en dash, the typographic mark for a range.
+    intervalValue: (lower, upper) =>
+      `${asTablePercent(lower)}–${asTablePercent(upper)}`,
+    value: (mean) => value.format(mean),
+    noData: 'no data',
   },
 
   legend: {
