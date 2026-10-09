@@ -267,6 +267,27 @@ describe('the details panel', () => {
       .toBeVisible()
   })
 
+  it('offers every value in a table for the selected area and measure', async () => {
+    const { pathname } = window.location
+    window.history.replaceState(
+      null,
+      '',
+      `${pathname}?postcode=B&measure=genome`,
+    )
+    const { screen } = await renderApp()
+    await screen.getByRole('button', { name: en.dataTable.open }).click()
+    const table = page.getByRole('table', {
+      name: en.dataTable.title(en.controls.area('Birmingham', 'B')),
+    })
+    await expect.element(table).toBeVisible()
+    // In the test's narrow window, this column starts scrolled out of view.
+    await expect
+      .element(
+        table.getByRole('columnheader', { name: en.dataTable.mean.genome }),
+      )
+      .toBeInTheDocument()
+  })
+
   it('outlines on the map the area of the bar under the pointer', async () => {
     const { screen, map } = await renderApp()
     const bar = screen.container.querySelector('aside [data-code]')
