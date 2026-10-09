@@ -7,8 +7,7 @@ import { scaleBand, scaleLinear } from 'd3-scale'
 import { useCopy } from '../content/useCopy'
 import { useElementSize } from '../hooks/useElementSize'
 import type { Interval } from '../lib/postcodeData'
-import { usePalette } from '../hooks/usePalette'
-import { inspectedColour } from './palette'
+import { barColour, inspectedColour } from './palette'
 
 const height = 200
 const margin = { top: 8, right: 8, bottom: 24, left: 48 }
@@ -54,7 +53,6 @@ export function TopPostcodesChart({
   onLeave,
 }: TopPostcodesChartProps) {
   const copy = useCopy()
-  const palette = usePalette()
   const [ref, { width }] = useElementSize<HTMLDivElement>()
   const innerWidth = Math.max(width - margin.left - margin.right, 0)
   const innerHeight = height - margin.top - margin.bottom
@@ -139,8 +137,7 @@ export function TopPostcodesChart({
                   y={y(interval.mean)}
                   width={barWidth}
                   height={y(0) - y(interval.mean)}
-                  fill={palette.ramp(1)}
-                  fillOpacity={0.5}
+                  fill={barColour}
                   stroke={isInspected ? inspectedColour : 'none'}
                   strokeWidth={2}
                 />

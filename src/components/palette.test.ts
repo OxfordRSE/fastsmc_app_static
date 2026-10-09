@@ -1,6 +1,7 @@
 import { rgb } from 'd3-color'
 import { describe, expect, it } from 'vitest'
 import {
+  barColour,
   borderColour,
   inspectedColour,
   inspectedHalo,
@@ -69,6 +70,19 @@ describe.each(themes)('in the %s theme', (theme) => {
     }
   })
 })
+
+it.each([
+  ['light', 'black'],
+  ['dark', 'white'],
+] as const)(
+  'draws the chart bars to stand out in the %s theme, under %s error bars',
+  (theme, errorBars) => {
+    expect(contrast(barColour, pageBackground[theme])).toBeGreaterThanOrEqual(
+      minimum,
+    )
+    expect(contrast(barColour, errorBars)).toBeGreaterThanOrEqual(minimum)
+  },
+)
 
 it('distinguishes the selected and inspected marks by lightness, not only hue', () => {
   expect(contrast(selectedColour, inspectedColour)).toBeGreaterThanOrEqual(

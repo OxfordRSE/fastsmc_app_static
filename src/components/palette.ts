@@ -46,6 +46,14 @@ export const palettes: Readonly<Record<Theme, Palette>> = {
   },
 }
 
+/**
+ * The chart's bars, in both themes: a mid-blue from the same scheme, which
+ * contrasts with either page and with the error bars drawn over it (black in
+ * the light theme, white in the dark). The bars' heights carry their values,
+ * so their colour need not follow the map's scale.
+ */
+export const barColour = interpolateYlGnBu(0.7)
+
 /** Marks the selected area: Okabe-Ito orange. */
 export const selectedColour = '#e69f00'
 
