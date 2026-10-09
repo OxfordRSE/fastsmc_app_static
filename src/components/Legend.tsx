@@ -3,7 +3,7 @@
 
 import { useCopy } from '../content/useCopy'
 import type { ColourRange } from '../lib/colourRange'
-import { usePalette } from '../hooks/usePalette'
+import { darkest, lightest } from './palette'
 
 /** Props of {@link Legend}. */
 export interface LegendProps {
@@ -27,9 +27,6 @@ export interface LegendProps {
  */
 export function Legend({ range, extent, selected }: LegendProps) {
   const copy = useCopy()
-  const palette = usePalette()
-  // Enough stops for the gradient to follow the scale's curve.
-  const stops = Array.from({ length: 11 }, (_, i) => palette.ramp(i / 10))
   const low = copy.percent(range.low)
   const high = copy.percent(range.high)
   return (
@@ -41,12 +38,9 @@ export function Legend({ range, extent, selected }: LegendProps) {
         aria-hidden
         data-ramp
         // Kept in forced-colours mode, which would otherwise drop the gradient.
-        // Spread under the border too (bg-origin-border): sized to the inside
-        // alone, the gradient would repeat into the border, and the dark
-        // theme's translucent border would show its far end at each edge.
-        className="h-3 rounded-sm border bg-origin-border forced-color-adjust-none"
+        className="h-3 rounded-sm border forced-color-adjust-none"
         style={{
-          backgroundImage: `linear-gradient(to right, ${stops.join(', ')})`,
+          background: `linear-gradient(to right, ${lightest}, ${darkest})`,
         }}
       />
       <div className="flex justify-between gap-2 text-muted-foreground tabular-nums">

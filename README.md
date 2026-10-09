@@ -30,20 +30,19 @@ npx playwright install chromium
 
 ## Commands
 
-| Command                      | Purpose                                                                      |
-| ---------------------------- | ---------------------------------------------------------------------------- |
-| `npm run dev`                | Start the development server with hot reload                                 |
-| `npm run build`              | Type-check and build into `dist/`                                            |
-| `npm run preview`            | Serve the built site locally                                                 |
-| `npm run typecheck`          | Type-check without building                                                  |
-| `npm run lint`               | Run ESLint                                                                   |
-| `npm run format`             | Format with Prettier                                                         |
-| `npm run format:check`       | Check formatting without writing                                             |
-| `npm test`                   | Run the unit and component tests once                                        |
-| `npm run test:watch`         | Run the unit and component tests on change                                   |
-| `npm run test:smoke`         | Build the site and smoke-test it in Chromium                                 |
-| `npm run test:accessibility` | Build the site and check it for accessibility problems (see below)           |
-| `npm run favicon`            | Redraw `public/favicon.svg` from the map, after changing its data or colours |
+| Command                      | Purpose                                                            |
+| ---------------------------- | ------------------------------------------------------------------ |
+| `npm run dev`                | Start the development server with hot reload                       |
+| `npm run build`              | Type-check and build into `dist/`                                  |
+| `npm run preview`            | Serve the built site locally                                       |
+| `npm run typecheck`          | Type-check without building                                        |
+| `npm run lint`               | Run ESLint                                                         |
+| `npm run format`             | Format with Prettier                                               |
+| `npm run format:check`       | Check formatting without writing                                   |
+| `npm test`                   | Run the unit and component tests once                              |
+| `npm run test:watch`         | Run the unit and component tests on change                         |
+| `npm run test:smoke`         | Build the site and smoke-test it in Chromium                       |
+| `npm run test:accessibility` | Build the site and check it for accessibility problems (see below) |
 
 ## Accessibility
 

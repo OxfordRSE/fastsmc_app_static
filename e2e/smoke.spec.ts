@@ -1,7 +1,7 @@
 // Checks the production build as a visitor sees it: what the component tests,
 // which render the app in a test page, cannot. Behaviour is tested there.
 
-import { expect, type Page, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { en } from '../src/content/en.ts'
 
 test('the built site loads and works under its base path', async ({
@@ -44,36 +44,4 @@ test('the built site loads and works under its base path', async ({
   expect((await page.request.get(String(icon))).ok()).toBe(true)
 
   expect(problems).toEqual([])
-})
-
-// index.html's inline script sets the theme before the first paint, so a dark
-// page never flashes white. With the app's scripts blocked, only it can act.
-test.describe('the theme, before the app runs', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.route('**/*.{js,ts,tsx}', (route) => route.abort())
-  })
-
-  const isDark = (page: Page) =>
-    page.evaluate(() => document.documentElement.classList.contains('dark'))
-
-  test('follows a device set to dark', async ({ page }) => {
-    await page.emulateMedia({ colorScheme: 'dark' })
-    await page.goto('./')
-    expect(await isDark(page)).toBe(true)
-  })
-
-  test('follows a device set to light', async ({ page }) => {
-    await page.emulateMedia({ colorScheme: 'light' })
-    await page.goto('./')
-    expect(await isDark(page)).toBe(false)
-  })
-
-  test('shows a stored choice over the device', async ({ page }) => {
-    await page.emulateMedia({ colorScheme: 'light' })
-    await page.addInitScript(() => {
-      localStorage.setItem('theme', 'dark')
-    })
-    await page.goto('./')
-    expect(await isDark(page)).toBe(true)
-  })
 })

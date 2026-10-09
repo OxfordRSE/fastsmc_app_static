@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { page } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import App from './App'
-import { palettes } from './components/palette'
 import { en } from './content/en'
 
 // The test page's URL carries Vitest's own parameters, and the app rewrites the
@@ -168,20 +167,13 @@ describe('the map', () => {
     await expect.poll(() => window.location.search).toBe('?postcode=B')
   })
 
-  it('explains an area without data when it is clicked, keeping the selection', async () => {
+  it('keeps the selection when an area without data is clicked', async () => {
     const area = await renderApp()
     await area('B').click()
     await expect.poll(() => window.location.search).toBe('?postcode=B')
     // Forced: an area without data is marked disabled, which Playwright otherwise waits out.
     await area('CR').click({ force: true })
-    const dialog = page.getByRole('dialog', {
-      name: en.noData.title(en.controls.area('Croydon', 'CR')),
-    })
-    await expect.element(dialog).toBeVisible()
-    await expect.element(dialog.getByText(en.noData.explanation)).toBeVisible()
     expect(window.location.search).toBe('?postcode=B')
-    await dialog.getByRole('button', { name: en.info.close }).first().click()
-    await expect.element(dialog).not.toBeInTheDocument()
   })
 })
 
@@ -239,11 +231,11 @@ it('reads a custom colour range in percent of the selected area itself', async (
     .toBeVisible()
   const harrow = screen.container.querySelector('main > div [data-code="HA"]')
   if (!harrow) throw new Error('No HA')
-  // HA is 100% of itself, the top of a 0% to 100% range: the scale's high end.
-  // Read as raw values instead, its 0.003 or so would be at the low end.
+  // HA is 100% of itself, the top of a 0% to 100% range: the darkest fill.
+  // Read as raw values instead, its 0.003 or so would be almost white.
   await expect
     .element(page.elementLocator(harrow))
-    .toHaveAttribute('fill', palettes.light.ramp(1))
+    .toHaveAttribute('fill', 'rgb(0, 0, 255)')
   // The range is clamped to the values present, so only its top is certain.
   await screen.getByRole('checkbox', { name: en.controls.showAdvanced }).click()
   await expect.element(screen.getByText(/ to 100%$/)).toBeVisible()
