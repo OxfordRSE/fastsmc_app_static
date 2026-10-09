@@ -31,14 +31,20 @@ export interface PostcodeInfoProps {
   readonly selected: string
   /** Code of the inspected area, if any. */
   readonly inspected: string | null
-  /** Whether to offer a button that selects the inspected area: after a tap. */
-  readonly offerSelect: boolean
+  /**
+   * Whether the inspected area was tapped: then buttons follow its line, to
+   * select it or explain why it has no data. A pointer's inspection ends as it
+   * leaves the map, before it could reach them, and a click acts directly.
+   */
+  readonly tapped: boolean
   /** The matrix of the measure being shown. */
   readonly values: Float32Array
   /** Time depth in generations. */
   readonly generations: number
   /** Called to select an area. */
   readonly onSelect: (code: string) => void
+  /** Called to explain why an area has no data. */
+  readonly onExplainNoData: (code: string) => void
   /** Called when the pointer moves onto a bar of the chart. */
   readonly onInspect: (code: string) => void
   /** Called when the pointer leaves the chart. */
@@ -75,10 +81,11 @@ function Swatch({
 export function PostcodeInfo({
   selected,
   inspected,
-  offerSelect,
+  tapped,
   values,
   generations,
   onSelect,
+  onExplainNoData,
   onInspect,
   onClearInspection,
 }: PostcodeInfoProps) {
@@ -121,13 +128,17 @@ export function PostcodeInfo({
       ranked.length,
     )
   })()
-  // The area a button may select: one tapped, with data, and not already selected.
+  // After a tap, the area a button may select (with data, not already selected)
+  // or explain (on the map, without data).
+  const tappedOther =
+    tapped && inspected !== null && inspected !== selected ? inspected : null
   const selectable =
-    offerSelect &&
-    inspected !== null &&
-    inspected !== selected &&
-    isUsable(inspected)
-      ? inspected
+    tappedOther !== null && isUsable(tappedOther) ? tappedOther : null
+  const explainable =
+    tappedOther !== null &&
+    !isUsable(tappedOther) &&
+    areasByCode.has(tappedOther)
+      ? tappedOther
       : null
 
   const entries: ChartEntry[] = ranked
@@ -184,6 +195,19 @@ export function PostcodeInfo({
                   }}
                 >
                   {copy.details.select}
+                </Button>
+              )}
+              {explainable !== null && (
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="ml-2 align-baseline"
+                  aria-label={copy.details.whyLabel(labelOf(explainable))}
+                  onClick={() => {
+                    onExplainNoData(explainable)
+                  }}
+                >
+                  {copy.details.why}
                 </Button>
               )}
             </span>

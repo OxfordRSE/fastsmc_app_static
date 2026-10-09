@@ -53,6 +53,8 @@ export interface UkMapProps {
   readonly inspected: Inspection | null
   /** Called to select an area with data: a click, a second tap, or Enter. */
   readonly onSelect: (code: string) => void
+  /** Called, as selecting would, on an area without data, to explain why it has none. */
+  readonly onExplainNoData: (code: string) => void
   /** Called to inspect an area: the pointer over it, a first tap, or the keyboard. */
   readonly onInspect: (code: string, by: InspectMethod) => void
   /** Called to stop inspecting. */
@@ -71,6 +73,9 @@ const arrows: Readonly<Partial<Record<string, Direction>>> = {
   ArrowUp: 'up',
   ArrowDown: 'down',
 }
+
+// Distance between the hatch lines over areas without data, in pixels.
+const hatchSpacing = 6
 
 // Letters typed within this many milliseconds of each other search together.
 const typingPauseMs = 1000
@@ -95,12 +100,14 @@ export function UkMap({
   selected,
   inspected,
   onSelect,
+  onExplainNoData,
   onInspect,
   onClearInspection,
 }: UkMapProps) {
   const copy = useCopy()
   const palette = usePalette()
   const keysId = useId()
+  const hatchId = `${keysId}-no-data`
   const optionId = (code: string) => `${keysId}-${code}`
   const [ref, { width, height }] = useElementSize<HTMLDivElement>()
   const svgRef = useRef<SVGSVGElement>(null)
@@ -158,8 +165,10 @@ export function UkMap({
     onInspect(code, 'keyboard')
     showArea(code)
   }
-  const selectIfData = (code: string) => {
+  // Selects an area, or explains why it cannot be selected.
+  const choose = (code: string) => {
     if (areasByCode.get(code)?.hasData) onSelect(code)
+    else onExplainNoData(code)
   }
 
   const onKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
@@ -184,7 +193,7 @@ export function UkMap({
     } else if (key === 'End' && last) {
       inspectByKey(last.code)
     } else if (key === 'Enter' || (key === ' ' && !typing)) {
-      selectIfData(current)
+      choose(current)
     } else if (key === 'Escape') {
       onClearInspection()
     } else if (key.length === 1 && /[\p{L} ]/u.test(key)) {
@@ -200,9 +209,9 @@ export function UkMap({
 
   const onAreaClick = (code: string) => {
     if (pointerType.current !== 'touch') {
-      selectIfData(code)
+      choose(code)
     } else if (inspected?.postcode === code) {
-      selectIfData(code)
+      choose(code)
     } else {
       onInspect(code, 'touch')
     }
@@ -313,6 +322,30 @@ export function UkMap({
         strokeLinecap="round"
       >
         {/* Outlines keep their width at any zoom (non-scaling strokes). */}
+        {/* Diagonal lines over grey for areas without data, so they do not
+            rely on colour alone; scaled against the zoom, so the lines keep
+            their spacing on screen. */}
+        <defs>
+          <pattern
+            id={hatchId}
+            data-no-data-pattern
+            patternUnits="userSpaceOnUse"
+            width={hatchSpacing}
+            height={hatchSpacing}
+            patternTransform={`scale(${String(1 / transform.k)}) rotate(45)`}
+          >
+            <rect
+              width={hatchSpacing}
+              height={hatchSpacing}
+              fill={palette.noData}
+            />
+            <line
+              y2={hatchSpacing}
+              stroke={palette.noDataHatch}
+              strokeWidth={hatchSpacing / 3}
+            />
+          </pattern>
+        </defs>
         <g transform={transform.toString()}>
           {areasInOrder.map(({ code, name, matrixIndex, hasData }) => {
             const value = values.get(matrixIndex)
@@ -333,7 +366,7 @@ export function UkMap({
                 d={outlines.get(code)}
                 data-code={code}
                 className={hasData ? 'cursor-pointer' : undefined}
-                fill={known ? colour(value) : palette.noData}
+                fill={known ? colour(value) : `url(#${hatchId})`}
                 onPointerEnter={(event) => {
                   if (event.pointerType !== 'touch') onInspect(code, 'pointer')
                 }}

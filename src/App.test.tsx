@@ -168,13 +168,20 @@ describe('the map', () => {
     await expect.poll(() => window.location.search).toBe('?postcode=B')
   })
 
-  it('keeps the selection when an area without data is clicked', async () => {
+  it('explains an area without data when it is clicked, keeping the selection', async () => {
     const area = await renderApp()
     await area('B').click()
     await expect.poll(() => window.location.search).toBe('?postcode=B')
     // Forced: an area without data is marked disabled, which Playwright otherwise waits out.
     await area('CR').click({ force: true })
+    const dialog = page.getByRole('dialog', {
+      name: en.noData.title(en.controls.area('Croydon', 'CR')),
+    })
+    await expect.element(dialog).toBeVisible()
+    await expect.element(dialog.getByText(en.noData.explanation)).toBeVisible()
     expect(window.location.search).toBe('?postcode=B')
+    await dialog.getByRole('button', { name: en.info.close }).first().click()
+    await expect.element(dialog).not.toBeInTheDocument()
   })
 })
 

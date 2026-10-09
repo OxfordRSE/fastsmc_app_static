@@ -1,9 +1,10 @@
-import { useEffect, useReducer } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import { Controls } from './components/Controls'
 import { Credits } from './components/Credits'
 import { DataTable } from './components/DataTable'
 import { InfoDialog } from './components/InfoDialog'
 import { Legend } from './components/Legend'
+import { NoDataDialog } from './components/NoDataDialog'
 import { PostcodeInfo } from './components/PostcodeInfo'
 import { ThemeMenu } from './components/ThemeMenu'
 import { UkMap } from './components/UkMap'
@@ -42,6 +43,8 @@ export default function App() {
   )
   const { view, inspected } = state
   const [mapAreaRef, mapArea] = useElementSize<HTMLDivElement>()
+  // The area without data being explained, if any.
+  const [explaining, setExplaining] = useState<string | null>(null)
   const legendBeside = sideSpace(mapArea.width, mapArea.height) >= legendRoomPx
 
   // Pathname included: an empty string would keep the current query.
@@ -104,6 +107,7 @@ export default function App() {
             selected={view.postcode}
             inspected={inspected}
             onSelect={select}
+            onExplainNoData={setExplaining}
             onInspect={inspect}
             onClearInspection={clearInspection}
           />
@@ -140,10 +144,11 @@ export default function App() {
           <PostcodeInfo
             selected={view.postcode}
             inspected={inspected?.postcode ?? null}
-            offerSelect={inspected?.by === 'touch'}
+            tapped={inspected?.by === 'touch'}
             values={matrix}
             generations={generations}
             onSelect={select}
+            onExplainNoData={setExplaining}
             onInspect={(postcode) => {
               inspect(postcode, 'pointer')
             }}
@@ -163,6 +168,12 @@ export default function App() {
           </div>
         </div>
         <Credits />
+        <NoDataDialog
+          area={explaining}
+          onClose={() => {
+            setExplaining(null)
+          }}
+        />
       </aside>
     </main>
   )

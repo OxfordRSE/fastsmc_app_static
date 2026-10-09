@@ -123,6 +123,10 @@ export interface Copy {
     readonly inspectPrompt: string
     /** Text of the button that selects the area inspected by a tap. */
     readonly select: string
+    /** Text of the button beside "no data" that explains it. */
+    readonly why: string
+    /** That button's full name for screen readers, given the area's name and code. */
+    readonly whyLabel: (area: string) => string
     /** That button's full name for screen readers, given the area's name and code. */
     readonly selectLabel: (area: string) => string
     /** Heading of the chart. */
@@ -173,6 +177,13 @@ export interface Copy {
     readonly value: (value: number) => string
     /** Shown across the value columns of an area without data. */
     readonly noData: string
+  }
+  /** The dialog explaining an area without data. */
+  readonly noData: {
+    /** Its title, given the area's name and code. */
+    readonly title: (area: string) => string
+    /** The explanation. */
+    readonly explanation: string
   }
   /** The colour theme menu. */
   readonly theme: {
@@ -357,6 +368,8 @@ export const en: Copy = {
     inspectPrompt:
       'Point at or tap an area on the map, or a bar in the chart, to compare it with the selected area.',
     select: 'Select',
+    why: 'Why?',
+    whyLabel: (area) => `Why is there no data for ${area}?`,
     selectLabel: (area) => `Select ${area}`,
     topAreas: 'Top 10 most related areas',
     chartUnit: (selected) =>
@@ -389,6 +402,15 @@ export const en: Copy = {
       `${asTablePercent(lower)}–${asTablePercent(upper)}`,
     value: (mean) => value.format(mean),
     noData: 'no data',
+  },
+
+  noData: {
+    title: (area) => `No data for ${area}`,
+    // Deliberately general until the reason is confirmed.
+    explanation: sentences(
+      'There is not enough data for this area to estimate its genetic links with other areas.',
+      'Areas without data are shown hatched in grey on the map.',
+    ),
   },
 
   theme: {
@@ -425,7 +447,7 @@ export const en: Copy = {
     overview: sentences(
       'The map shows genetic relationships between UK postcode areas, measured by identity-by-descent (IBD) over the past 300 to 1,500 years, depending on the "Time threshold".',
       'The intensity of the colour reflects how closely related the selected area, outlined in orange, is to every other area.',
-      'Areas shown in grey have too little data for this analysis.',
+      'Areas hatched in grey have too little data for this analysis.',
       'Point at or tap an area to outline it in black and compare it; click it, or tap it again, to select it.',
       'With a keyboard, move to the map and use the arrow keys.',
       'Zoom in with the buttons on the map, the mouse wheel, or by pinching.',
