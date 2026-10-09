@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { page } from 'vitest/browser'
+import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
+import { en } from '../content/en'
+import { maxZoom, panStepPx, zoomStep } from '../lib/mapZoom'
 import { indexOf } from '../lib/postcodeData'
 import { UkMap, type UkMapProps } from './UkMap'
 
@@ -135,6 +137,127 @@ it.each([
   expect(Math.min(...Object.values(margins))).toBeGreaterThanOrEqual(
     0.05 * Math.min(width, 600) - 1,
   )
+})
+
+describe('zoom', () => {
+  async function renderZoomable(props: Partial<UkMapProps> = {}) {
+    const rendered = await renderMap(props)
+    const svg = rendered.screen.container.querySelector('svg')
+    if (!svg) throw new Error('No map drawn')
+    // The current zoom, read from the transform the map draws with.
+    const zoom = () => {
+      const transform =
+        svg.querySelector(':scope > g')?.getAttribute('transform') ?? ''
+      const match = /translate\((.+),(.+)\) scale\((.+)\)/.exec(transform)
+      if (!match) throw new Error(`Unexpected transform ${transform}`)
+      const [x = NaN, y = NaN, k = NaN] = match.slice(1).map(Number)
+      return { x, y, k }
+    }
+    const button = (name: string) => page.getByRole('button', { name })
+    return { ...rendered, svg, zoom, button }
+  }
+
+  it('starts at the whole map, which it cannot zoom out of', async () => {
+    const { zoom, button } = await renderZoomable()
+    expect(zoom()).toEqual({ x: 0, y: 0, k: 1 })
+    await expect.element(button(en.map.zoomOut)).toBeDisabled()
+    await expect.element(button(en.map.resetZoom)).toBeDisabled()
+    await expect.element(button(en.map.zoomIn)).toBeEnabled()
+  })
+
+  it('zooms in with the button, up to the limit that suits the smallest area', async () => {
+    const { zoom, button } = await renderZoomable()
+    await button(en.map.zoomIn).click()
+    expect(zoom().k).toBe(zoomStep)
+    while (!button(en.map.zoomIn).element().hasAttribute('disabled')) {
+      await button(en.map.zoomIn).click()
+    }
+    expect(zoom().k).toBeCloseTo(maxZoom(400, 600), 6)
+  })
+
+  it('zooms out and returns to the whole map with the buttons', async () => {
+    const { zoom, button } = await renderZoomable()
+    await button(en.map.zoomIn).click()
+    await button(en.map.zoomIn).click()
+    await button(en.map.zoomOut).click()
+    expect(zoom().k).toBe(zoomStep)
+    await button(en.map.resetZoom).click()
+    expect(zoom()).toEqual({ x: 0, y: 0, k: 1 })
+  })
+
+  it('zooms and pans with the keyboard', async () => {
+    const { svg, zoom } = await renderZoomable()
+    svg.focus()
+    await userEvent.keyboard('+')
+    expect(zoom().k).toBe(zoomStep)
+    const before = zoom()
+    await userEvent.keyboard('{ArrowRight}')
+    expect(zoom().x).toBe(before.x - panStepPx)
+    await userEvent.keyboard('0')
+    expect(zoom()).toEqual({ x: 0, y: 0, k: 1 })
+  })
+
+  it('never pans beyond the whole map', async () => {
+    const { svg, zoom } = await renderZoomable()
+    svg.focus()
+    await userEvent.keyboard('{ArrowLeft}{ArrowUp}')
+    expect(zoom()).toEqual({ x: 0, y: 0, k: 1 })
+  })
+
+  it('zooms in with the mouse wheel', async () => {
+    const { svg, zoom } = await renderZoomable()
+    const { left, top } = svg.getBoundingClientRect()
+    svg.dispatchEvent(
+      new WheelEvent('wheel', {
+        deltaY: -200,
+        clientX: left + 200,
+        clientY: top + 300,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    await expect.poll(() => zoom().k).toBeGreaterThan(1)
+  })
+
+  it('lets a touch drag scroll the page until zoomed in', async () => {
+    const { svg, button } = await renderZoomable()
+    expect(svg.style.touchAction).toBe('pan-y')
+    await button(en.map.zoomIn).click()
+    expect(svg.style.touchAction).toBe('none')
+  })
+
+  it('brings a newly selected area into view', async () => {
+    const { screen, svg, button } = await renderZoomable({ selected: 'HA' })
+    for (let i = 0; i < 3; i++) await button(en.map.zoomIn).click()
+    const shetland = () => {
+      const area = svg.querySelector('[data-code="ZE"]')
+      if (!area) throw new Error('No ZE')
+      return area.getBoundingClientRect()
+    }
+    const view = svg.getBoundingClientRect()
+    expect(shetland().bottom).toBeLessThan(view.top)
+    await screen.rerender(
+      <div style={{ width: 400, height: 600 }}>
+        <UkMap
+          values={new Map()}
+          range={{ low: 0, high: 1 }}
+          selected="ZE"
+          hovered={null}
+          onSelect={() => undefined}
+          onHover={() => undefined}
+        />
+      </div>,
+    )
+    await expect.poll(() => shetland().top).toBeGreaterThanOrEqual(view.top)
+    expect(shetland().bottom).toBeLessThanOrEqual(view.bottom)
+  })
+
+  it('keeps outlines the same width at any zoom', async () => {
+    const { svg } = await renderZoomable()
+    for (const path of svg.querySelectorAll('path')) {
+      expect(path.getAttribute('vector-effect')).toBe('non-scaling-stroke')
+    }
+  })
 })
 
 it('resizes with its container', async () => {
