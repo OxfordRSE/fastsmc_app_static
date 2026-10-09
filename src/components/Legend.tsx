@@ -41,9 +41,12 @@ export function Legend({ range, extent, selected }: LegendProps) {
         aria-hidden
         data-ramp
         // Kept in forced-colours mode, which would otherwise drop the gradient.
-        className="h-3 rounded-sm border forced-color-adjust-none"
+        // Spread under the border too (bg-origin-border): sized to the inside
+        // alone, the gradient would repeat into the border, and the dark
+        // theme's translucent border would show its far end at each edge.
+        className="h-3 rounded-sm border bg-origin-border forced-color-adjust-none"
         style={{
-          background: `linear-gradient(to right, ${stops.join(', ')})`,
+          backgroundImage: `linear-gradient(to right, ${stops.join(', ')})`,
         }}
       />
       <div className="flex justify-between gap-2 text-muted-foreground tabular-nums">

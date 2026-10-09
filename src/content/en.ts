@@ -174,6 +174,17 @@ export interface Copy {
     /** Shown across the value columns of an area without data. */
     readonly noData: string
   }
+  /** The colour theme menu. */
+  readonly theme: {
+    /** Name of the button that opens the menu. */
+    readonly label: string
+    /** Follow the device's light or dark setting. */
+    readonly system: string
+    /** Always light. */
+    readonly light: string
+    /** Always dark. */
+    readonly dark: string
+  }
   /** The map itself, for screen readers, and its zoom controls. */
   readonly map: {
     /** Names the map, a list of areas to move through with the keyboard. */
@@ -378,6 +389,13 @@ export const en: Copy = {
       `${asTablePercent(lower)}–${asTablePercent(upper)}`,
     value: (mean) => value.format(mean),
     noData: 'no data',
+  },
+
+  theme: {
+    label: 'Colour theme',
+    system: 'System',
+    light: 'Light',
+    dark: 'Dark',
   },
 
   map: {

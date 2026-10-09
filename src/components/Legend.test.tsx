@@ -34,11 +34,13 @@ it('runs along the colour scale, from its low end to its high end', async () => 
   const ramp = screen.container.querySelector('[data-ramp]')
   if (!(ramp instanceof HTMLElement)) throw new Error('No ramp')
   const { ramp: colour } = palettes.light
-  const gradient = ramp.style.background
+  const gradient = ramp.style.backgroundImage
   expect(gradient.startsWith(`linear-gradient(to right, ${colour(0)}, `)).toBe(
     true,
   )
   expect(gradient.endsWith(`, ${colour(1)})`)).toBe(true)
+  // Spread under the border, so its far end does not repeat into the edges.
+  expect(getComputedStyle(ramp).backgroundOrigin).toBe('border-box')
 })
 
 it('labels the ends plainly when no values lie beyond them', async () => {

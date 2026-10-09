@@ -5,6 +5,7 @@ import { DataTable } from './components/DataTable'
 import { InfoDialog } from './components/InfoDialog'
 import { Legend } from './components/Legend'
 import { PostcodeInfo } from './components/PostcodeInfo'
+import { ThemeMenu } from './components/ThemeMenu'
 import { UkMap } from './components/UkMap'
 import { Spinner } from './components/ui/spinner'
 import { useCopy } from './content/useCopy'
@@ -125,7 +126,10 @@ export default function App() {
         </div>
       </div>
       <aside className="flex flex-col gap-6 border-t p-4 md:w-96 md:shrink-0 md:overflow-y-auto md:border-t-0 md:border-l">
-        <h1 className="text-2xl font-semibold">{copy.appTitle}</h1>
+        <div className="flex items-start justify-between gap-2">
+          <h1 className="text-2xl font-semibold">{copy.appTitle}</h1>
+          <ThemeMenu />
+        </div>
         <Controls
           view={view}
           range={range}

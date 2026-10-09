@@ -1,4 +1,5 @@
 import { type Palette, palettes } from '../components/palette'
+import { useTheme } from './useTheme'
 
 /**
  * The colours of the current theme.
@@ -6,7 +7,5 @@ import { type Palette, palettes } from '../components/palette'
  * @returns The palette of the theme the page is shown in.
  */
 export function usePalette(): Palette {
-  return palettes[
-    document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-  ]
+  return palettes[useTheme().theme]
 }
