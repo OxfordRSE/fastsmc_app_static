@@ -37,7 +37,8 @@ export function Legend({ range, extent, selected }: LegendProps) {
       <div
         aria-hidden
         data-ramp
-        className="h-3 rounded-sm border"
+        // Kept in forced-colours mode, which would otherwise drop the gradient.
+        className="h-3 rounded-sm border forced-color-adjust-none"
         style={{
           background: `linear-gradient(to right, ${lightest}, ${darkest})`,
         }}

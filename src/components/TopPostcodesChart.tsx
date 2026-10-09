@@ -73,7 +73,13 @@ export function TopPostcodesChart({
   const cap = barWidth * capFraction
 
   return (
-    <div ref={ref} className="w-full">
+    // In forced-colours (high contrast) mode the chart keeps its own colours and
+    // background, as an image would: the bars' colour is data, and the system's
+    // colours do not reach SVG text and lines.
+    <div
+      ref={ref}
+      className="w-full forced-color-adjust-none forced-colors:bg-background"
+    >
       <svg
         width={width}
         height={height}

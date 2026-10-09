@@ -49,11 +49,23 @@ npx playwright install chromium
 The site aims to meet [WCAG 2.2](https://www.w3.org/TR/WCAG22/) at level AA.
 Three kinds of check cover it, and the Test and Deploy workflows run the first two on every change.
 
-- **Automated rules.**
-  `npm run test:accessibility` (`e2e/accessibility.spec.ts`) scans the built site with [axe-core](https://github.com/dequelabs/axe-core), in Chromium.
-  It applies every axe-core rule tagged for WCAG 2.0, 2.1 and 2.2 at levels A and AA (`wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`), such as colour contrast, names for buttons and form fields, valid ARIA, and scrolling regions that the keyboard can reach.
-  It scans six states: the page as it opens, the map in keyboard use while zoomed in, the advanced settings, and each of the three dialogs.
-  Rules that are best practice rather than WCAG requirements are not applied.
+- **Automated checks of the built site.**
+  `npm run test:accessibility` (`e2e/accessibility.spec.ts`) checks the built site in Chromium:
+  - **axe-core rules.**
+    It scans with [axe-core](https://github.com/dequelabs/axe-core), applying every rule tagged for WCAG 2.0, 2.1 and 2.2 at levels A and AA (`wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`), such as colour contrast, names for buttons and form fields, valid ARIA, and scrolling regions that the keyboard can reach.
+    It also applies axe-core's best practices (`best-practice`), which go beyond WCAG, such as one main landmark and headings in order.
+    It scans seven states: the page as it opens, the map in keyboard use while zoomed in, the advanced settings, each of the three dialogs, and forced-colours mode.
+  - **Reflow (WCAG 1.4.10).**
+    In a 320 px wide window, nothing scrolls sideways and no text is cut off.
+  - **Text spacing (WCAG 1.4.12).**
+    With the wider letter, word, line and paragraph spacing that people must be able to set, no text is cut off.
+  - **Forced colours.**
+    In Windows' high-contrast modes, which replace the page's colours with the user's own, the colours that carry data are kept: the map's fills, the legend's colour ramp and the chart.
+  - **Reduced motion (WCAG 2.3.3, level AAA).**
+    When the system asks for less motion, nothing animates.
+  - **What a screen reader is given.**
+    The names, roles and states of everything on the page are compared with a snapshot in `e2e/accessibility.spec.ts-snapshots/`, so an unintended change fails.
+    After an intended one, update the snapshot with `npm run test:accessibility -- --update-snapshots` and review its diff.
 - **Behaviour, in the component tests.**
   `npm test` checks what a rule scanner cannot, for example: that the map works by keyboard (arrow keys, typing a code or name, Enter and Escape) and by touch (a tap inspects, a second tap selects); that it is a list box of areas, each named with its value; that zooming has button and keyboard alternatives to pinching and dragging; and that the selected and inspected outlines keep enough contrast against every map colour.
 - **A person.**

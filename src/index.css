@@ -128,4 +128,15 @@
   html {
     @apply font-sans;
   }
+  /* No animation for those whose system asks for less motion (WCAG 2.3.3).
+     A hair above zero, so code that waits for an animation's end still sees it. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }

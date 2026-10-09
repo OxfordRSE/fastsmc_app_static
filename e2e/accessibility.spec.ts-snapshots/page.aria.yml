@@ -1,0 +1,170 @@
+- main:
+    - listbox "Map of UK postcode areas":
+        - option /Aberdeen \(AB\), \d+%/
+        - option /Bath \(BA\), \d+%/
+        - option /Birmingham \(B\), \d+%/
+        - option /Blackburn \(BB\), \d+%/
+        - option /Bolton \(BL\), \d+%/
+        - option /Bournemouth \(BH\), \d+%/
+        - option /Bradford \(BD\), \d+%/
+        - option "Brighton (BN), no data" [disabled]
+        - option /Bristol \(BS\), \d+%/
+        - option /Bromley \(BR\), \d+%/
+        - option /Cambridge \(CB\), \d+%/
+        - option /Canterbury \(CT\), \d+%/
+        - option /Cardiff \(CF\), \d+%/
+        - option /Carlisle \(CA\), \d+%/
+        - option /Chelmsford \(CM\), \d+%/
+        - option /Chester \(CH\), \d+%/
+        - option /Colchester \(CO\), \d+%/
+        - option /Coventry \(CV\), \d+%/
+        - option /Crewe \(CW\), \d+%/
+        - option "Croydon (CR), no data" [disabled]
+        - option /Darlington \(DL\), \d+%/
+        - option /Dartford \(DA\), \d+%/
+        - option /Derby \(DE\), \d+%/
+        - option /Doncaster \(DN\), \d+%/
+        - option /Dorchester \(DT\), \d+%/
+        - option /Dudley \(DY\), \d+%/
+        - option /Dumfries and Galloway \(DG\), \d+%/
+        - option /Dundee \(DD\), \d+%/
+        - option /Durham \(DH\), \d+%/
+        - option /Edinburgh \(EH\), \d+%/
+        - option /Enfield \(EN\), \d+%/
+        - option /Exeter \(EX\), \d+%/
+        - option /Falkirk \(FK\), \d+%/
+        - option /Glasgow \(G\), \d+%/
+        - option /Gloucester \(GL\), \d+%/
+        - option /Guildford \(GU\), \d+%/
+        - option /Halifax \(HX\), \d+%/
+        - option /Harrogate \(HG\), \d+%/
+        - option /Harrow \(HA\), \d+%/ [selected]
+        - option /Hemel Hempstead \(HP\), \d+%/
+        - option /Hereford \(HR\), \d+%/
+        - option /Huddersfield \(HD\), \d+%/
+        - option /Hull \(HU\), \d+%/
+        - option /Ilford \(IG\), \d+%/
+        - option /Inverness \(IV\), \d+%/
+        - option /Ipswich \(IP\), \d+%/
+        - option /Kilmarnock \(KA\), \d+%/
+        - option /Kingston upon Thames \(KT\), \d+%/
+        - option /Kirkcaldy \(KY\), \d+%/
+        - option /Kirkwall \(KW\), \d+%/
+        - option /Lancaster \(LA\), \d+%/
+        - option /Leeds \(LS\), \d+%/
+        - option /Leicester \(LE\), \d+%/
+        - option /Lerwick \(ZE\), \d+%/
+        - option /Lincoln \(LN\), \d+%/
+        - option /Liverpool \(L\), \d+%/
+        - option /Llandrindod Wells \(LD\), \d+%/
+        - option /Llandudno \(LL\), \d+%/
+        - option /London E \(E\), \d+%/
+        - option /London EC \(EC\), \d+%/
+        - option /London N \(N\), \d+%/
+        - option /London NW \(NW\), \d+%/
+        - option /London SE \(SE\), \d+%/
+        - option /London SW \(SW\), \d+%/
+        - option /London W \(W\), \d+%/
+        - option /London WC \(WC\), \d+%/
+        - option /Luton \(LU\), \d+%/
+        - option /Manchester \(M\), \d+%/
+        - option /Medway \(ME\), \d+%/
+        - option /Milton Keynes \(MK\), \d+%/
+        - option /Motherwell \(ML\), \d+%/
+        - option /Newcastle upon Tyne \(NE\), \d+%/
+        - option /Newport \(NP\), \d+%/
+        - option /Northampton \(NN\), \d+%/
+        - option /Norwich \(NR\), \d+%/
+        - option /Nottingham \(NG\), \d+%/
+        - option /Oldham \(OL\), \d+%/
+        - option /Outer Hebrides \(HS\), \d+%/
+        - option /Oxford \(OX\), \d+%/
+        - option /Paisley \(PA\), \d+%/
+        - option /Perth \(PH\), \d+%/
+        - option /Peterborough \(PE\), \d+%/
+        - option /Plymouth \(PL\), \d+%/
+        - option /Portsmouth \(PO\), \d+%/
+        - option /Preston \(PR\), \d+%/
+        - option /Reading \(RG\), \d+%/
+        - option /Redhill \(RH\), \d+%/
+        - option /Romford \(RM\), \d+%/
+        - option /Salisbury \(SP\), \d+%/
+        - option /Sheffield \(S\), \d+%/
+        - option /Shrewsbury \(SY\), \d+%/
+        - option /Slough \(SL\), \d+%/
+        - option /Southampton \(SO\), \d+%/
+        - option /Southend-on-Sea \(SS\), \d+%/
+        - option /St Albans \(AL\), \d+%/
+        - option /Stevenage \(SG\), \d+%/
+        - option /Stockport \(SK\), \d+%/
+        - option /Stoke-on-Trent \(ST\), \d+%/
+        - option /Sunderland \(SR\), \d+%/
+        - option /Sutton \(SM\), \d+%/
+        - option /Swansea \(SA\), \d+%/
+        - option /Swindon \(SN\), \d+%/
+        - option /Taunton \(TA\), \d+%/
+        - option /Teeside \(TS\), \d+%/
+        - option /Telford \(TF\), \d+%/
+        - option /Teviotdale \(TD\), \d+%/
+        - option /The Fylde \(FY\), \d+%/
+        - option /Tonbridge \(TN\), \d+%/
+        - option /Torquay \(TQ\), \d+%/
+        - option /Truro \(TR\), \d+%/
+        - option /Twickenham \(TW\), \d+%/
+        - option /Uxbridge \(UB\), \d+%/
+        - option /Wakefield \(WF\), \d+%/
+        - option /Walsall \(WS\), \d+%/
+        - option /Warrington \(WA\), \d+%/
+        - option /Watford \(WD\), \d+%/
+        - option /Wigan \(WN\), \d+%/
+        - option /Wolverhampton \(WV\), \d+%/
+        - option /Worcester \(WR\), \d+%/
+        - option /York \(YO\), \d+%/
+    - paragraph: Move between areas with the arrow keys, or type the start of an area's code or name to jump to it. Press Enter to select an area, and Escape to stop comparing. Zoom with plus and minus, and press 0 to see the whole map.
+    - button "Zoom in"
+    - button "Zoom out" [disabled]
+    - button "Show the whole map" [disabled]
+    - figure "% of Harrow's link with itself": /% of Harrow's link with itself \d+% or less \d+% or more/
+    - complementary:
+        - heading "UK Ancestry Map" [level=1]
+        - group:
+            - text: Measure
+            - 'button "Help: Measure"'
+            - combobox "Measure": number of ancestors
+        - group:
+            - text: /Time threshold \d+ years/
+            - group "Time threshold":
+                - slider "Time threshold": /\d+/
+            - paragraph: Ancestry calculated this many years in the past.
+        - group:
+            - text: Postcode area
+            - group:
+                - combobox "Postcode area": Harrow (HA)
+                - group:
+                    - button "Show all postcode areas"
+            - paragraph: Type an area code, such as S or HA, or a place name.
+        - group:
+            - checkbox "Show advanced"
+            - text: Show advanced
+        - region "Harrow (HA)":
+            - heading "Harrow (HA)" [level=2]
+            - paragraph: "/Most related: Llandudno \\(LL\\), at \\d+% of Harrow's link with itself\\./"
+            - paragraph: Point at or tap an area on the map, or a bar in the chart, to compare it with the selected area.
+            - heading /Top \d+ most related areas/ [level=3]
+            - paragraph: As a percentage of Harrow's link with itself.
+            - img /Bar chart of the \d+ areas most related to Harrow \(HA\), with error bars/: /0% \d+% \d+% \d+% \d+% LL WD AL SA UB CH HP NW OX RG/
+            - list:
+                - listitem: "/Llandudno \\(LL\\): \\d+%/"
+                - listitem: "/Watford \\(WD\\): \\d+%/"
+                - listitem: "/St Albans \\(AL\\): \\d+%/"
+                - listitem: "/Swansea \\(SA\\): \\d+%/"
+                - listitem: "/Uxbridge \\(UB\\): \\d+%/"
+                - listitem: "/Chester \\(CH\\): \\d+%/"
+                - listitem: "/Hemel Hempstead \\(HP\\): \\d+%/"
+                - listitem: "/London NW \\(NW\\): \\d+%/"
+                - listitem: "/Oxford \\(OX\\): \\d+%/"
+                - listitem: "/Reading \\(RG\\): \\d+%/"
+        - button "Show all values"
+        - button "More information"
+        - paragraph: /© \d+-\d+ University of Oxford\./
+        - button "Credits"

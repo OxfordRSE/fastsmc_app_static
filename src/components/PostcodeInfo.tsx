@@ -42,9 +42,11 @@ export interface PostcodeInfoProps {
 
 function Swatch({ colour }: { readonly colour: string }) {
   return (
+    // Keeps its colour in forced-colours mode, on a light square so the black
+    // swatch shows against a dark theme, as the map's outlines keep theirs.
     <span
       aria-hidden
-      className="inline-block size-3 shrink-0 rounded-sm border-2"
+      className="inline-block size-3 shrink-0 rounded-sm border-2 forced-color-adjust-none forced-colors:bg-background"
       style={{ borderColor: colour }}
     />
   )
