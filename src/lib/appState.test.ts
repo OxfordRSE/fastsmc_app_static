@@ -18,10 +18,10 @@ function apply(state: AppState, ...actions: Action[]): AppState {
 }
 
 describe('initialState', () => {
-  it('starts from the view the URL describes, with nothing hovered', () => {
+  it('starts from the view the URL describes, with nothing inspected', () => {
     expect(initialState('?postcode=B&years=600')).toEqual({
       view: { ...defaultViewState, postcode: 'B', years: 600 },
-      hovered: null,
+      inspected: null,
     })
   })
 })
@@ -40,14 +40,31 @@ describe('select-postcode', () => {
   )
 })
 
-describe('hover-postcode', () => {
-  it('sets and clears the hovered area without changing the view', () => {
-    const hovered = apply(start, { type: 'hover-postcode', postcode: 'B' })
-    expect(hovered.hovered).toBe('B')
-    expect(hovered.view).toBe(start.view)
+describe('inspect-postcode and clear-inspection', () => {
+  it('sets and clears the inspected area, and how, without changing the view', () => {
+    const inspected = apply(start, {
+      type: 'inspect-postcode',
+      postcode: 'B',
+      by: 'touch',
+    })
+    expect(inspected.inspected).toEqual({ postcode: 'B', by: 'touch' })
+    expect(inspected.view).toBe(start.view)
+    expect(apply(inspected, { type: 'clear-inspection' }).inspected).toBeNull()
+  })
+
+  it('records a new way of inspecting the same area', () => {
+    const byPointer = apply(start, {
+      type: 'inspect-postcode',
+      postcode: 'B',
+      by: 'pointer',
+    })
     expect(
-      apply(hovered, { type: 'hover-postcode', postcode: null }).hovered,
-    ).toBeNull()
+      apply(byPointer, {
+        type: 'inspect-postcode',
+        postcode: 'B',
+        by: 'keyboard',
+      }).inspected,
+    ).toEqual({ postcode: 'B', by: 'keyboard' })
   })
 })
 
@@ -103,7 +120,19 @@ describe('unchanged state', () => {
     expect(apply(start, { type: 'select-postcode', postcode: 'HA' })).toBe(
       start,
     )
-    expect(apply(start, { type: 'hover-postcode', postcode: null })).toBe(start)
+    expect(apply(start, { type: 'clear-inspection' })).toBe(start)
+    const inspected = apply(start, {
+      type: 'inspect-postcode',
+      postcode: 'B',
+      by: 'pointer',
+    })
+    expect(
+      apply(inspected, {
+        type: 'inspect-postcode',
+        postcode: 'B',
+        by: 'pointer',
+      }),
+    ).toBe(inspected)
     expect(apply(start, { type: 'set-years', years: 300 })).toBe(start)
   })
 })

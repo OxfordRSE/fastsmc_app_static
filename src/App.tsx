@@ -10,7 +10,7 @@ import { Spinner } from './components/ui/spinner'
 import { useCopy } from './content/useCopy'
 import { useElementSize } from './hooks/useElementSize'
 import { useMatrices } from './hooks/useMatrices'
-import { appReducer, initialState } from './lib/appState'
+import { appReducer, type InspectMethod, initialState } from './lib/appState'
 import { colourRange, valueExtent } from './lib/colourRange'
 import {
   generationsFromYears,
@@ -39,7 +39,7 @@ export default function App() {
     window.location.search,
     initialState,
   )
-  const { view, hovered } = state
+  const { view, inspected } = state
   const [mapAreaRef, mapArea] = useElementSize<HTMLDivElement>()
   const legendBeside = sideSpace(mapArea.width, mapArea.height) >= legendRoomPx
 
@@ -78,8 +78,14 @@ export default function App() {
   const rangeValues = [...values.values()]
   const range = colourRange(view.range, rangeValues)
   const extent = valueExtent(rangeValues)
-  const hover = (postcode: string) => {
-    dispatch({ type: 'hover-postcode', postcode })
+  const select = (postcode: string) => {
+    dispatch({ type: 'select-postcode', postcode })
+  }
+  const inspect = (postcode: string, by: InspectMethod) => {
+    dispatch({ type: 'inspect-postcode', postcode, by })
+  }
+  const clearInspection = () => {
+    dispatch({ type: 'clear-inspection' })
   }
 
   return (
@@ -95,11 +101,10 @@ export default function App() {
             values={values}
             range={range}
             selected={view.postcode}
-            hovered={hovered}
-            onSelect={(postcode) => {
-              dispatch({ type: 'select-postcode', postcode })
-            }}
-            onHover={hover}
+            inspected={inspected}
+            onSelect={select}
+            onInspect={inspect}
+            onClearInspection={clearInspection}
           />
         </div>
         {/* In the bottom-right corner when the space beside the map fits it;
@@ -130,10 +135,17 @@ export default function App() {
         <div className="flex flex-col gap-3">
           <PostcodeInfo
             selected={view.postcode}
-            hovered={hovered}
+            inspected={inspected?.postcode ?? null}
+            offerSelect={inspected?.by === 'touch'}
             values={matrix}
             generations={generations}
-            onHover={hover}
+            onSelect={select}
+            onInspect={(postcode) => {
+              inspect(postcode, 'pointer')
+            }}
+            onClearInspection={() => {
+              if (inspected?.by === 'pointer') clearInspection()
+            }}
           />
           {/* Side by side, to keep the panel short enough not to scroll. */}
           <div className="flex flex-wrap gap-2">

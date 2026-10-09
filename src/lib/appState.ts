@@ -7,18 +7,38 @@ import type { RangeSetting } from './colourRange'
 import { type Measure, isUsable, yearsExtent } from './postcodeData'
 import { type ViewState, defaultViewState, parseViewState } from './urlState'
 
-/** Everything the app tracks: what the URL records, plus the hovered area. */
+/**
+ * How an area came to be inspected, which decides how the inspection ends:
+ * moving the pointer off the map ends a pointer's, and moving focus away ends
+ * the keyboard's. After a tap, a second tap or a button selects the area.
+ */
+export type InspectMethod = 'pointer' | 'touch' | 'keyboard'
+
+/** An area being looked at, and compared with the selected one, before or without selecting it. */
+export interface Inspection {
+  /** Code of the inspected area. */
+  readonly postcode: string
+  /** How it came to be inspected. */
+  readonly by: InspectMethod
+}
+
+/** Everything the app tracks: what the URL records, plus the inspected area. */
 export interface AppState {
   /** The settings a URL records. */
   readonly view: ViewState
-  /** Code of the area under the pointer, or `null` if there is none. */
-  readonly hovered: string | null
+  /** The inspected area, or `null` if there is none. */
+  readonly inspected: Inspection | null
 }
 
 /** A change to the app's state. */
 export type Action =
   | { readonly type: 'select-postcode'; readonly postcode: string }
-  | { readonly type: 'hover-postcode'; readonly postcode: string | null }
+  | {
+      readonly type: 'inspect-postcode'
+      readonly postcode: string
+      readonly by: InspectMethod
+    }
+  | { readonly type: 'clear-inspection' }
   | { readonly type: 'set-measure'; readonly measure: Measure }
   | { readonly type: 'set-years'; readonly years: number }
   | { readonly type: 'set-range'; readonly range: RangeSetting }
@@ -27,10 +47,10 @@ export type Action =
  * The state the app starts in.
  *
  * @param search - The page's query string, with or without its leading `?`.
- * @returns The view the URL describes, with nothing hovered.
+ * @returns The view the URL describes, with nothing inspected.
  */
 export function initialState(search: string): AppState {
-  return { view: parseViewState(search), hovered: null }
+  return { view: parseViewState(search), inspected: null }
 }
 
 /**
@@ -53,9 +73,16 @@ export function appReducer(state: AppState, action: Action): AppState {
         return state
       }
       return { ...state, view: { ...view, postcode: action.postcode } }
-    case 'hover-postcode':
-      if (action.postcode === state.hovered) return state
-      return { ...state, hovered: action.postcode }
+    case 'inspect-postcode': {
+      const { postcode, by } = action
+      if (postcode === state.inspected?.postcode && by === state.inspected.by) {
+        return state
+      }
+      return { ...state, inspected: { postcode, by } }
+    }
+    case 'clear-inspection':
+      if (state.inspected === null) return state
+      return { ...state, inspected: null }
     case 'set-measure': {
       if (action.measure === view.measure) return state
       const range =

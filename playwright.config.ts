@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// The smoke test runs against the production build, served under a base path as
+// The smoke test and the accessibility checks run against the production build,
+// each run building it afresh and serving it under a base path as
 // GitHub Pages serves it. Deploy passes the real one; elsewhere any path other
 // than '/' catches asset URLs that ignore it.
 const basePath = process.env.BASE_PATH ?? '/smoke-test'

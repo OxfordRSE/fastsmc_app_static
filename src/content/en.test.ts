@@ -78,7 +78,7 @@ describe('en', () => {
     [22, '22nd'],
     [101, '101st'],
   ])('ranks %i as %s', (rank, ordinal) => {
-    expect(en.details.hoveredLink('A', 'B', '1%', rank, 117)).toContain(
+    expect(en.details.inspectedLink('A', 'B', '1%', rank, 117)).toContain(
       ` ${ordinal} most related`,
     )
   })

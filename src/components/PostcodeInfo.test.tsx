@@ -1,4 +1,4 @@
-import { beforeAll, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { page } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { en } from '../content/en'
@@ -44,20 +44,28 @@ function meanOf(from: string, to: string): number {
 const percentFromHarrow = (code: string) =>
   en.percent((100 * meanOf('HA', code)) / meanOf('HA', 'HA'))
 
-async function renderInfo(hovered: string | null = null) {
-  const onHover = vi.fn()
+async function renderInfo(
+  inspected: string | null = null,
+  offerSelect = false,
+) {
+  const onInspect = vi.fn()
+  const onSelect = vi.fn()
+  const onClearInspection = vi.fn()
   const screen = await render(
     <div style={{ width: 360 }}>
       <PostcodeInfo
         selected="HA"
-        hovered={hovered}
+        inspected={inspected}
+        offerSelect={offerSelect}
         values={values}
         generations={generations}
-        onHover={onHover}
+        onSelect={onSelect}
+        onInspect={onInspect}
+        onClearInspection={onClearInspection}
       />
     </div>,
   )
-  return { screen, onHover }
+  return { screen, onInspect, onSelect, onClearInspection }
 }
 
 const rankedFromHarrow = () =>
@@ -86,20 +94,20 @@ it('states the strongest link as a percentage of the area itself', async () => {
 })
 
 it.each([
-  ['before anything is hovered', null],
-  ['while the selected area itself is hovered', 'HA'],
-])('invites a comparison %s', async (_, hovered) => {
-  const { screen } = await renderInfo(hovered)
-  await expect.element(screen.getByText(en.details.hoverPrompt)).toBeVisible()
+  ['before anything is inspected', null],
+  ['while the selected area itself is inspected', 'HA'],
+])('invites a comparison %s', async (_, inspected) => {
+  const { screen } = await renderInfo(inspected)
+  await expect.element(screen.getByText(en.details.inspectPrompt)).toBeVisible()
 })
 
-it('gives the hovered area as a percentage with its rank', async () => {
+it('gives the inspected area as a percentage with its rank', async () => {
   const { screen } = await renderInfo('B')
   const ranked = rankedFromHarrow()
   await expect
     .element(
       screen.getByText(
-        en.details.hoveredLink(
+        en.details.inspectedLink(
           nameOf('HA'),
           labelOf('B'),
           percentFromHarrow('B'),
@@ -110,14 +118,14 @@ it('gives the hovered area as a percentage with its rank', async () => {
     )
     .toBeVisible()
   await expect
-    .element(screen.getByText(en.details.hoverPrompt))
+    .element(screen.getByText(en.details.inspectPrompt))
     .not.toBeInTheDocument()
 })
 
-it('says when the hovered area has no data', async () => {
+it('says when the inspected area has no data', async () => {
   const { screen } = await renderInfo('CR')
   await expect
-    .element(screen.getByText(en.details.hoveredNoData(labelOf('CR'))))
+    .element(screen.getByText(en.details.inspectedNoData(labelOf('CR'))))
     .toBeVisible()
 })
 
@@ -151,14 +159,14 @@ it('lists the chart in percentages for screen readers', async () => {
   )
 })
 
-it('keeps the chart in place whatever is hovered', async () => {
+it('keeps the chart in place whatever is inspected', async () => {
   // The usable area with the longest name, which wraps the most.
   const longest = [...areasByCode.values()]
     .filter(({ code }) => code !== 'HA' && isUsable(code))
     .map(({ code }) => code)
     .reduce((a, b) => (labelOf(a).length >= labelOf(b).length ? a : b))
-  const chartTop = async (hovered: string | null) => {
-    const { screen } = await renderInfo(hovered)
+  const chartTop = async (inspected: string | null, offerSelect = false) => {
+    const { screen } = await renderInfo(inspected, offerSelect)
     const chart = screen.getByRole('img', {
       name: en.details.chartLabel(labelOf('HA')),
     })
@@ -168,15 +176,49 @@ it('keeps the chart in place whatever is hovered', async () => {
     return top
   }
   const settled = await chartTop(null)
-  for (const hovered of [longest, 'CR', 'B']) {
-    expect(await chartTop(hovered), hovered).toBe(settled)
+  for (const inspected of [longest, 'CR', 'B']) {
+    expect(await chartTop(inspected), inspected).toBe(settled)
   }
+  // With the select button that follows a tap, too.
+  expect(await chartTop(longest, true), `${longest} tapped`).toBe(settled)
+})
+
+describe('after a tap', () => {
+  it('offers a button that selects the tapped area', async () => {
+    const { screen, onSelect } = await renderInfo('B', true)
+    await screen
+      .getByRole('button', { name: en.details.selectLabel(labelOf('B')) })
+      .click()
+    expect(onSelect).toHaveBeenCalledExactlyOnceWith('B')
+  })
+
+  it.each([
+    ['for an area inspected by pointer or keyboard', 'B', false],
+    ['for an area without data', 'CR', true],
+    ['for the selected area itself', 'HA', true],
+  ])('offers no select button %s', async (_, inspected, offerSelect) => {
+    const { screen } = await renderInfo(inspected, offerSelect)
+    await expect
+      .element(screen.getByRole('heading', { level: 2 }))
+      .toBeVisible()
+    expect(screen.container.querySelector('button')).toBeNull()
+  })
+})
+
+it('stops inspecting when the pointer leaves the chart', async () => {
+  const { screen, onClearInspection } = await renderInfo('B')
+  const chart = screen.getByRole('img', {
+    name: en.details.chartLabel(labelOf('HA')),
+  })
+  await chart.hover()
+  await screen.getByRole('heading', { level: 2 }).hover()
+  expect(onClearInspection).toHaveBeenCalled()
 })
 
 it('reports a bar under the pointer', async () => {
-  const { screen, onHover } = await renderInfo()
+  const { screen, onInspect } = await renderInfo()
   const bar = screen.container.querySelector('[data-code]')
   if (!bar) throw new Error('No bars')
   await page.elementLocator(bar).hover()
-  expect(onHover).toHaveBeenCalledWith(bar.getAttribute('data-code'))
+  expect(onInspect).toHaveBeenCalledWith(bar.getAttribute('data-code'))
 })

@@ -2,7 +2,7 @@ import { expect, it, vi } from 'vitest'
 import { page } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { en } from '../content/en'
-import { hoveredColour } from './palette'
+import { inspectedColour } from './palette'
 import { type ChartEntry, TopPostcodesChart } from './TopPostcodesChart'
 
 const entries: ChartEntry[] = [
@@ -24,18 +24,20 @@ const entries: ChartEntry[] = [
 ]
 
 async function renderChart(
-  hovered: string | null = null,
+  inspected: string | null = null,
   width = 400,
   bars: readonly ChartEntry[] = entries,
 ) {
-  const onHover = vi.fn()
+  const onInspect = vi.fn()
+  const onLeave = vi.fn()
   const screen = await render(
     <div style={{ width }}>
       <TopPostcodesChart
         entries={bars}
-        hovered={hovered}
+        inspected={inspected}
         label="Top areas"
-        onHover={onHover}
+        onInspect={onInspect}
+        onLeave={onLeave}
       />
     </div>,
   )
@@ -49,7 +51,7 @@ async function renderChart(
   }
   const number = (element: Element | null, name: string) =>
     Number(element?.getAttribute(name))
-  return { screen, svg, group, number, onHover }
+  return { screen, svg, group, number, onInspect }
 }
 
 it('draws one bar per area, labelled with its code, in order', async () => {
@@ -113,15 +115,15 @@ it('labels a wider axis in whole percentages', async () => {
 })
 
 it('reports the bar under the pointer', async () => {
-  const { group, onHover } = await renderChart()
+  const { group, onInspect } = await renderChart()
   await page.elementLocator(group('WS')).hover()
-  expect(onHover).toHaveBeenCalledWith('WS')
+  expect(onInspect).toHaveBeenCalledWith('WS')
 })
 
-it('outlines only the hovered area, as the map does', async () => {
+it('outlines only the inspected area, as the map does', async () => {
   const { group } = await renderChart('CV')
   expect(group('CV').querySelector('[data-bar]')?.getAttribute('stroke')).toBe(
-    hoveredColour,
+    inspectedColour,
   )
   expect(group('B').querySelector('[data-bar]')?.getAttribute('stroke')).toBe(
     'none',

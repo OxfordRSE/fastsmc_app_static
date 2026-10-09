@@ -9,12 +9,14 @@ import { useCopy } from '../content/useCopy'
 import {
   indexOf,
   intervalAt,
+  isUsable,
   rank,
   relativeInterval,
 } from '../lib/postcodeData'
 import { areasByCode, areasByIndex } from '../lib/postcodeMap'
-import { hoveredColour, selectedColour } from './palette'
+import { inspectedColour, selectedColour } from './palette'
 import { type ChartEntry, TopPostcodesChart } from './TopPostcodesChart'
+import { Button } from './ui/button'
 
 const chartLength = 10
 
@@ -22,21 +24,29 @@ const chartLength = 10
 export interface PostcodeInfoProps {
   /** Code of the selected area. */
   readonly selected: string
-  /** Code of the area under the pointer, if any. */
-  readonly hovered: string | null
+  /** Code of the inspected area, if any. */
+  readonly inspected: string | null
+  /** Whether to offer a button that selects the inspected area: after a tap. */
+  readonly offerSelect: boolean
   /** The matrix of the measure being shown. */
   readonly values: Float32Array
   /** Time depth in generations. */
   readonly generations: number
+  /** Called to select an area. */
+  readonly onSelect: (code: string) => void
   /** Called when the pointer moves onto a bar of the chart. */
-  readonly onHover: (code: string) => void
+  readonly onInspect: (code: string) => void
+  /** Called when the pointer leaves the chart. */
+  readonly onClearInspection: () => void
 }
 
 function Swatch({ colour }: { readonly colour: string }) {
   return (
+    // Keeps its colour in forced-colours mode, on a light square so the black
+    // swatch shows against a dark theme, as the map's outlines keep theirs.
     <span
       aria-hidden
-      className="inline-block size-3 shrink-0 rounded-sm border-2"
+      className="inline-block size-3 shrink-0 rounded-sm border-2 forced-color-adjust-none forced-colors:bg-background"
       style={{ borderColor: colour }}
     />
   )
@@ -50,10 +60,13 @@ function Swatch({ colour }: { readonly colour: string }) {
  */
 export function PostcodeInfo({
   selected,
-  hovered,
+  inspected,
+  offerSelect,
   values,
   generations,
-  onHover,
+  onSelect,
+  onInspect,
+  onClearInspection,
 }: PostcodeInfoProps) {
   const copy = useCopy()
   const headingId = useId()
@@ -77,21 +90,31 @@ export function PostcodeInfo({
   const top = ranked[0]
   const topArea = top && areasByIndex.get(top.index)
 
-  const hoveredIndex =
-    hovered === null || hovered === selected ? undefined : indexOf(hovered)
-  const hoveredLine = (() => {
-    if (hovered === null || hoveredIndex === undefined) return null
-    const interval = intervalAt(values, from, hoveredIndex, generations)
-    if (!interval) return copy.details.hoveredNoData(labelOf(hovered))
-    const position = ranked.findIndex((entry) => entry.index === hoveredIndex)
-    return copy.details.hoveredLink(
+  const inspectedIndex =
+    inspected === null || inspected === selected
+      ? undefined
+      : indexOf(inspected)
+  const inspectedLine = (() => {
+    if (inspected === null || inspectedIndex === undefined) return null
+    const interval = intervalAt(values, from, inspectedIndex, generations)
+    if (!interval) return copy.details.inspectedNoData(labelOf(inspected))
+    const position = ranked.findIndex((entry) => entry.index === inspectedIndex)
+    return copy.details.inspectedLink(
       selectedName,
-      labelOf(hovered),
+      labelOf(inspected),
       percentOf(interval.mean),
       position + 1,
       ranked.length,
     )
   })()
+  // The area a button may select: one tapped, with data, and not already selected.
+  const selectable =
+    offerSelect &&
+    inspected !== null &&
+    inspected !== selected &&
+    isUsable(inspected)
+      ? inspected
+      : null
 
   const entries: ChartEntry[] = ranked
     .slice(0, chartLength)
@@ -128,12 +151,28 @@ export function PostcodeInfo({
           )}
       </p>
       <div className="min-h-[3lh] text-sm">
-        {hoveredLine === null ? (
-          <p className="text-muted-foreground">{copy.details.hoverPrompt}</p>
+        {inspectedLine === null ? (
+          <p className="text-muted-foreground">{copy.details.inspectPrompt}</p>
         ) : (
           <p className="flex items-baseline gap-2">
-            <Swatch colour={hoveredColour} />
-            <span>{hoveredLine}</span>
+            <Swatch colour={inspectedColour} />
+            <span>
+              {inspectedLine}
+              {/* After a tap, which cannot hover, a second tap or this selects it. */}
+              {selectable !== null && (
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="ml-2 align-baseline"
+                  aria-label={copy.details.selectLabel(labelOf(selectable))}
+                  onClick={() => {
+                    onSelect(selectable)
+                  }}
+                >
+                  {copy.details.select}
+                </Button>
+              )}
+            </span>
           </p>
         )}
       </div>
@@ -145,9 +184,10 @@ export function PostcodeInfo({
       </div>
       <TopPostcodesChart
         entries={entries}
-        hovered={hovered}
+        inspected={inspected}
         label={copy.details.chartLabel(selectedLabel)}
-        onHover={onHover}
+        onInspect={onInspect}
+        onLeave={onClearInspection}
       />
     </section>
   )

@@ -171,7 +171,8 @@ describe('the map', () => {
     const area = await renderApp()
     await area('B').click()
     await expect.poll(() => window.location.search).toBe('?postcode=B')
-    await area('CR').click()
+    // Forced: an area without data is marked disabled, which Playwright otherwise waits out.
+    await area('CR').click({ force: true })
     expect(window.location.search).toBe('?postcode=B')
   })
 })
@@ -294,7 +295,7 @@ describe('the details panel', () => {
     if (!bar) throw new Error('No bars')
     await page.elementLocator(bar).hover()
     const code = bar.getAttribute('data-code')
-    const outline = map.querySelector('[data-outline="hovered"]')
+    const outline = map.querySelector('[data-outline="inspected"]')
     expect(outline?.getAttribute('d')).toBe(
       map.querySelector(`[data-code="${String(code)}"]`)?.getAttribute('d'),
     )

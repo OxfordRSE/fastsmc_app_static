@@ -174,6 +174,7 @@ export function Controls({ view, range, extent, dispatch }: ControlsProps) {
           <ComboboxInput
             id={`${id}-postcode`}
             placeholder={copy.controls.postcodePlaceholder}
+            triggerLabel={copy.controls.postcodeList}
           />
           <ComboboxContent>
             <ComboboxEmpty>{copy.controls.noMatch}</ComboboxEmpty>

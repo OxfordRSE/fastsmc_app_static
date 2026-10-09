@@ -136,9 +136,16 @@ function DataTableContent({
           )}
         </DialogDescription>
       </DialogHeader>
+      {/* The scrolling box takes focus, so the keyboard can scroll it (WCAG 2.1.1). */}
       <Table
         aria-labelledby={titleId}
-        containerClassName="min-h-0 overflow-auto"
+        containerProps={{
+          className:
+            'min-h-0 overflow-auto rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+          tabIndex: 0,
+          role: 'region',
+          'aria-labelledby': titleId,
+        }}
       >
         <TableHeader className={header}>
           <TableRow className={headerRow}>
