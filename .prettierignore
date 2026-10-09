@@ -9,3 +9,6 @@ src/data
 
 # shadcn/ui components, kept as its CLI wrote them (see README)
 src/components/ui
+
+# Accessibility-tree snapshots, written by Playwright
+e2e/*-snapshots

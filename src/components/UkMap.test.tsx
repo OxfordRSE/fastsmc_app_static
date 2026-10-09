@@ -7,6 +7,7 @@ import type { Inspection } from '../lib/appState'
 import { maxZoom, zoomStep } from '../lib/mapZoom'
 import { indexOf } from '../lib/postcodeData'
 import { areasByCode } from '../lib/postcodeMap'
+import { borderColour, palettes } from './palette'
 import { UkMap, type UkMapProps } from './UkMap'
 
 function indexFor(postcode: string): number {
@@ -25,6 +26,7 @@ async function renderMap(props: Partial<UkMapProps> = {}, width = 400) {
         selected="HA"
         inspected={null}
         onSelect={() => undefined}
+        onExplainNoData={() => undefined}
         onInspect={() => undefined}
         onClearInspection={() => undefined}
         {...props}
@@ -58,15 +60,30 @@ describe('colours', () => {
   ])
 
   it.each([
-    ['the lowest value', 'HA', 'rgb(255, 255, 255)'],
-    ['a middle value', 'B', 'rgb(128, 128, 255)'],
-    ['the highest value', 'LL', 'rgb(0, 0, 255)'],
-    ['a value beyond the range, clamped', 'ZE', 'rgb(0, 0, 255)'],
-    ['an area with no value given', 'KW', '#c8c8c8'],
-    ['an area without data, whatever its value', 'CR', '#c8c8c8'],
+    ['the lowest value', 'HA', palettes.light.ramp(0)],
+    ['a middle value', 'B', palettes.light.ramp(0.5)],
+    ['the highest value', 'LL', palettes.light.ramp(1)],
+    ['a value beyond the range, clamped', 'ZE', palettes.light.ramp(1)],
   ])('shades %s', async (_, code, fill) => {
     const { area } = await renderMap({ values })
     await expect.element(area(code)).toHaveAttribute('fill', fill)
+  })
+
+  it.each([
+    ['an area with no value given', 'KW'],
+    ['an area without data, whatever its value', 'CR'],
+  ])('hatches %s, in grey', async (_, code) => {
+    const { screen, area } = await renderMap({ values })
+    const pattern = screen.container.querySelector('[data-no-data-pattern]')
+    await expect
+      .element(area(code))
+      .toHaveAttribute('fill', `url(#${String(pattern?.id)})`)
+    expect(pattern?.querySelector('rect')?.getAttribute('fill')).toBe(
+      palettes.light.noData,
+    )
+    expect(pattern?.querySelector('line')?.getAttribute('stroke')).toBe(
+      palettes.light.noDataHatch,
+    )
   })
 })
 
@@ -78,12 +95,14 @@ describe('selection', () => {
     expect(onSelect).toHaveBeenCalledExactlyOnceWith('B')
   })
 
-  it('ignores clicks on an area without data', async () => {
+  it('explains, rather than selects, an area without data when clicked', async () => {
     const onSelect = vi.fn()
-    const { area } = await renderMap({ onSelect })
+    const onExplainNoData = vi.fn()
+    const { area } = await renderMap({ onSelect, onExplainNoData })
     // Forced: an area without data is marked disabled, which Playwright otherwise waits out.
     await area('CR').click({ force: true })
     expect(onSelect).not.toHaveBeenCalled()
+    expect(onExplainNoData).toHaveBeenCalledExactlyOnceWith('CR')
   })
 
   it('reports the area under the pointer', async () => {
@@ -98,6 +117,7 @@ describe('selection', () => {
 // and keys can be followed. Returns what was selected.
 async function renderStateful() {
   const onSelect = vi.fn()
+  const onExplainNoData = vi.fn()
   function StatefulMap() {
     const [inspected, setInspected] = useState<Inspection | null>(null)
     return (
@@ -108,6 +128,7 @@ async function renderStateful() {
           selected="HA"
           inspected={inspected}
           onSelect={onSelect}
+          onExplainNoData={onExplainNoData}
           onInspect={(postcode, by) => {
             setInspected({ postcode, by })
           }}
@@ -137,7 +158,7 @@ async function renderStateful() {
       ) ?? null
     )
   }
-  return { screen, svg, area, inspected, onSelect }
+  return { screen, svg, area, inspected, onSelect, onExplainNoData }
 }
 
 // A tap, as a touch screen reports it: a touch pointer, then a click.
@@ -158,12 +179,15 @@ describe('touch', () => {
     expect(onSelect).toHaveBeenCalledExactlyOnceWith('B')
   })
 
-  it('inspects an area without data, but never selects it', async () => {
-    const { area, inspected, onSelect } = await renderStateful()
+  it('inspects an area without data, and explains it with a second tap', async () => {
+    const { area, inspected, onSelect, onExplainNoData } =
+      await renderStateful()
     tap(area('CR'))
     await expect.poll(inspected).toBe('CR')
+    expect(onExplainNoData).not.toHaveBeenCalled()
     tap(area('CR'))
     expect(onSelect).not.toHaveBeenCalled()
+    expect(onExplainNoData).toHaveBeenCalledExactlyOnceWith('CR')
   })
 
   it('stops inspecting with a tap on the sea', async () => {
@@ -253,6 +277,15 @@ describe('keyboard', () => {
     await expect.poll(inspected).toBeNull()
   })
 
+  it('explains an area without data with Enter', async () => {
+    const { inspected, onSelect, onExplainNoData } = await focusMap()
+    await userEvent.keyboard('croy')
+    await expect.poll(inspected).toBe('CR')
+    await userEvent.keyboard('{Enter}')
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(onExplainNoData).toHaveBeenCalledExactlyOnceWith('CR')
+  })
+
   it('stops inspecting when focus leaves the map', async () => {
     const { inspected } = await focusMap()
     await expect.poll(inspected).toBe('HA')
@@ -287,6 +320,18 @@ describe('for screen readers', () => {
       .element(listbox.getByRole('option', { selected: true }))
       .toHaveAttribute('data-code', 'HA')
   })
+})
+
+it('draws every boundary and the coastline once, in grey, over the fills', async () => {
+  const { screen } = await renderMap()
+  const lines = screen.container.querySelectorAll('[data-boundaries]')
+  expect(lines).toHaveLength(1)
+  expect(lines[0]?.getAttribute('stroke')).toBe(borderColour)
+  expect(lines[0]?.getAttribute('d')).toMatch(/^M/)
+  // The areas themselves have no outline of their own to double it.
+  for (const area of screen.container.querySelectorAll('path[data-code]')) {
+    expect(area.getAttribute('stroke')).toBeNull()
+  }
 })
 
 describe('outlines', () => {
@@ -465,6 +510,7 @@ describe('zoom', () => {
           selected="ZE"
           inspected={null}
           onSelect={() => undefined}
+          onExplainNoData={() => undefined}
           onInspect={() => undefined}
           onClearInspection={() => undefined}
         />
@@ -476,7 +522,7 @@ describe('zoom', () => {
 
   it('keeps outlines the same width at any zoom', async () => {
     const { svg } = await renderZoomable()
-    for (const path of svg.querySelectorAll('path')) {
+    for (const path of svg.querySelectorAll('path[stroke]')) {
       expect(path.getAttribute('vector-effect')).toBe('non-scaling-stroke')
     }
   })

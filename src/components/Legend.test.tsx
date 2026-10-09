@@ -3,7 +3,7 @@ import { render } from 'vitest-browser-react'
 import { en } from '../content/en'
 import type { ColourRange } from '../lib/colourRange'
 import { Legend } from './Legend'
-import { darkest, lightest } from './palette'
+import { palettes } from './palette'
 
 async function renderLegend(range: ColourRange, extent: ColourRange) {
   const screen = await render(
@@ -26,15 +26,21 @@ it('says what the colours show, as a labelled figure', async () => {
     .toBeVisible()
 })
 
-it('runs from the lightest colour to the darkest', async () => {
+it('runs along the colour scale, from its low end to its high end', async () => {
   const { screen } = await renderLegend(
     { low: 0, high: 46 },
     { low: 0, high: 100 },
   )
   const ramp = screen.container.querySelector('[data-ramp]')
   if (!(ramp instanceof HTMLElement)) throw new Error('No ramp')
-  expect(ramp.style.background).toContain(lightest)
-  expect(ramp.style.background).toContain(darkest)
+  const { ramp: colour } = palettes.light
+  const gradient = ramp.style.backgroundImage
+  expect(gradient.startsWith(`linear-gradient(to right, ${colour(0)}, `)).toBe(
+    true,
+  )
+  expect(gradient.endsWith(`, ${colour(1)})`)).toBe(true)
+  // Spread under the border, so its far end does not repeat into the edges.
+  expect(getComputedStyle(ramp).backgroundOrigin).toBe('border-box')
 })
 
 it('labels the ends plainly when no values lie beyond them', async () => {

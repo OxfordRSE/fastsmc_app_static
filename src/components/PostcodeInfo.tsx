@@ -14,7 +14,12 @@ import {
   relativeInterval,
 } from '../lib/postcodeData'
 import { areasByCode, areasByIndex } from '../lib/postcodeMap'
-import { inspectedColour, selectedColour } from './palette'
+import {
+  inspectedColour,
+  inspectedHalo,
+  selectedColour,
+  selectedHalo,
+} from './palette'
 import { type ChartEntry, TopPostcodesChart } from './TopPostcodesChart'
 import { Button } from './ui/button'
 
@@ -26,28 +31,43 @@ export interface PostcodeInfoProps {
   readonly selected: string
   /** Code of the inspected area, if any. */
   readonly inspected: string | null
-  /** Whether to offer a button that selects the inspected area: after a tap. */
-  readonly offerSelect: boolean
+  /**
+   * Whether the inspected area was tapped: then buttons follow its line, to
+   * select it or explain why it has no data. A pointer's inspection ends as it
+   * leaves the map, before it could reach them, and a click acts directly.
+   */
+  readonly tapped: boolean
   /** The matrix of the measure being shown. */
   readonly values: Float32Array
   /** Time depth in generations. */
   readonly generations: number
   /** Called to select an area. */
   readonly onSelect: (code: string) => void
+  /** Called to explain why an area has no data. */
+  readonly onExplainNoData: (code: string) => void
   /** Called when the pointer moves onto a bar of the chart. */
   readonly onInspect: (code: string) => void
   /** Called when the pointer leaves the chart. */
   readonly onClearInspection: () => void
 }
 
-function Swatch({ colour }: { readonly colour: string }) {
+function Swatch({
+  colour,
+  halo,
+}: {
+  readonly colour: string
+  readonly halo: string
+}) {
   return (
-    // Keeps its colour in forced-colours mode, on a light square so the black
-    // swatch shows against a dark theme, as the map's outlines keep theirs.
+    // Drawn like the map's outline, with its halo on either side, so it shows
+    // in both themes; and kept in forced-colours mode, as the map's are.
     <span
       aria-hidden
-      className="inline-block size-3 shrink-0 rounded-sm border-2 forced-color-adjust-none forced-colors:bg-background"
-      style={{ borderColor: colour }}
+      className="inline-block size-3 shrink-0 rounded-sm border-2 forced-color-adjust-none"
+      style={{
+        borderColor: colour,
+        boxShadow: `0 0 0 1px ${halo}, inset 0 0 0 1px ${halo}`,
+      }}
     />
   )
 }
@@ -61,10 +81,11 @@ function Swatch({ colour }: { readonly colour: string }) {
 export function PostcodeInfo({
   selected,
   inspected,
-  offerSelect,
+  tapped,
   values,
   generations,
   onSelect,
+  onExplainNoData,
   onInspect,
   onClearInspection,
 }: PostcodeInfoProps) {
@@ -107,13 +128,17 @@ export function PostcodeInfo({
       ranked.length,
     )
   })()
-  // The area a button may select: one tapped, with data, and not already selected.
+  // After a tap, the area a button may select (with data, not already selected)
+  // or explain (on the map, without data).
+  const tappedOther =
+    tapped && inspected !== null && inspected !== selected ? inspected : null
   const selectable =
-    offerSelect &&
-    inspected !== null &&
-    inspected !== selected &&
-    isUsable(inspected)
-      ? inspected
+    tappedOther !== null && isUsable(tappedOther) ? tappedOther : null
+  const explainable =
+    tappedOther !== null &&
+    !isUsable(tappedOther) &&
+    areasByCode.has(tappedOther)
+      ? tappedOther
       : null
 
   const entries: ChartEntry[] = ranked
@@ -137,7 +162,7 @@ export function PostcodeInfo({
         id={headingId}
         className="flex items-center gap-2 text-lg font-semibold"
       >
-        <Swatch colour={selectedColour} />
+        <Swatch colour={selectedColour} halo={selectedHalo} />
         {selectedLabel}
       </h2>
       {/* Heights reserved in lines of text, so the chart below never moves. */}
@@ -155,7 +180,7 @@ export function PostcodeInfo({
           <p className="text-muted-foreground">{copy.details.inspectPrompt}</p>
         ) : (
           <p className="flex items-baseline gap-2">
-            <Swatch colour={inspectedColour} />
+            <Swatch colour={inspectedColour} halo={inspectedHalo} />
             <span>
               {inspectedLine}
               {/* After a tap, which cannot hover, a second tap or this selects it. */}
@@ -170,6 +195,19 @@ export function PostcodeInfo({
                   }}
                 >
                   {copy.details.select}
+                </Button>
+              )}
+              {explainable !== null && (
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="ml-2 align-baseline"
+                  aria-label={copy.details.whyLabel(labelOf(explainable))}
+                  onClick={() => {
+                    onExplainNoData(explainable)
+                  }}
+                >
+                  {copy.details.why}
                 </Button>
               )}
             </span>
