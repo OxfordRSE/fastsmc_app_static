@@ -20,9 +20,10 @@ const rules = [
 
 // The rules axe-core breaks, by name and the elements involved, so a failure
 // says what to fix.
-async function violations(page: Page) {
+async function violations(page: Page, skipped: readonly string[] = []) {
   const { violations: found } = await new AxeBuilder({ page })
     .withTags(rules)
+    .disableRules([...skipped])
     .analyze()
   return found.map(({ id, nodes }) => ({
     rule: id,
@@ -35,44 +36,66 @@ async function open(page: Page) {
   await expect(page.locator('path[data-code]')).toHaveCount(120)
 }
 
-test.describe('axe-core rules', () => {
-  test.beforeEach(async ({ page }) => {
-    await open(page)
-  })
+// Every state in both themes, as the device's setting chooses them.
+for (const colorScheme of ['light', 'dark'] as const) {
+  test.describe(`axe-core rules, ${colorScheme} theme`, () => {
+    test.beforeEach(async ({ page }) => {
+      await page.emulateMedia({ colorScheme })
+      await open(page)
+    })
 
-  test('the page as it opens', async ({ page }) => {
-    expect(await violations(page)).toEqual([])
-  })
+    test('the page as it opens', async ({ page }) => {
+      expect(await violations(page)).toEqual([])
+    })
 
-  test('the map in use from the keyboard, zoomed in', async ({ page }) => {
-    await page.getByRole('listbox', { name: en.map.label }).focus()
-    await page.keyboard.press('ArrowRight')
-    await page.getByRole('button', { name: en.map.zoomIn }).click()
-    expect(await violations(page)).toEqual([])
-  })
+    test('the map in use from the keyboard, zoomed in', async ({ page }) => {
+      await page.getByRole('listbox', { name: en.map.label }).focus()
+      await page.keyboard.press('ArrowRight')
+      await page.getByRole('button', { name: en.map.zoomIn }).click()
+      expect(await violations(page)).toEqual([])
+    })
 
-  test('the advanced settings', async ({ page }) => {
-    await page.getByRole('checkbox', { name: en.controls.showAdvanced }).click()
-    expect(await violations(page)).toEqual([])
-  })
+    test('the advanced settings', async ({ page }) => {
+      await page
+        .getByRole('checkbox', { name: en.controls.showAdvanced })
+        .click()
+      expect(await violations(page)).toEqual([])
+    })
 
-  for (const [name, button] of [
-    ['the table of values', en.dataTable.open],
-    ['more information', en.info.open],
-    ['the credits', en.credits.open],
-  ] as const) {
-    test(`the dialog of ${name}`, async ({ page }) => {
-      await page.getByRole('button', { name: button }).click()
+    test('the theme menu', async ({ page }) => {
+      await page.getByRole('button', { name: en.theme.label }).click()
+      await expect(page.getByRole('menu')).toBeVisible()
+      // The open menu sits at the end of the page, outside its landmarks, as
+      // popup menus do; it stays tied to its button, so the best practice that
+      // all content be in a landmark (region) does not apply.
+      expect(await violations(page, ['region'])).toEqual([])
+    })
+
+    for (const [name, button] of [
+      ['the table of values', en.dataTable.open],
+      ['more information', en.info.open],
+      ['the credits', en.credits.open],
+    ] as const) {
+      test(`the dialog of ${name}`, async ({ page }) => {
+        await page.getByRole('button', { name: button }).click()
+        await expect(page.getByRole('dialog')).toBeVisible()
+        expect(await violations(page)).toEqual([])
+      })
+    }
+
+    test('the dialog explaining an area without data', async ({ page }) => {
+      // Forced: an area without data is marked disabled, which Playwright otherwise waits out.
+      await page.locator('path[data-code="CR"]').click({ force: true })
       await expect(page.getByRole('dialog')).toBeVisible()
       expect(await violations(page)).toEqual([])
     })
-  }
 
-  test('forced-colours (high contrast) mode', async ({ page }) => {
-    await page.emulateMedia({ forcedColors: 'active' })
-    expect(await violations(page)).toEqual([])
+    test('forced-colours (high contrast) mode', async ({ page }) => {
+      await page.emulateMedia({ forcedColors: 'active' })
+      expect(await violations(page)).toEqual([])
+    })
   })
-})
+}
 
 // Text cut off by a box too small for it: an element that hides overflow,
 // holds text, and is narrower or shorter than its contents.

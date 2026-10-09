@@ -48,14 +48,15 @@ npx playwright install chromium
 ## Accessibility
 
 The site aims to meet [WCAG 2.2](https://www.w3.org/TR/WCAG22/) at level AA.
-Three kinds of check cover it, and the Test and Deploy workflows run the first two on every change.
+Four kinds of check cover it, and the Test and Deploy workflows run the first three on every change.
 
 - **Automated checks of the built site.**
   `npm run test:accessibility` (`e2e/accessibility.spec.ts`) checks the built site in Chromium:
   - **axe-core rules.**
     It scans with [axe-core](https://github.com/dequelabs/axe-core), applying every rule tagged for WCAG 2.0, 2.1 and 2.2 at levels A and AA (`wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`), such as colour contrast, names for buttons and form fields, valid ARIA, and scrolling regions that the keyboard can reach.
     It also applies axe-core's best practices (`best-practice`), which go beyond WCAG, such as one main landmark and headings in order.
-    It scans seven states: the page as it opens, the map in keyboard use while zoomed in, the advanced settings, each of the three dialogs, and forced-colours mode.
+    It scans nine states, each in the light and dark themes: the page as it opens, the map in keyboard use while zoomed in, the advanced settings, the theme menu, each of the four dialogs, and forced-colours mode.
+    The open theme menu is exempt from one best practice, that all content sit in a landmark, as popup menus sit outside them.
   - **Reflow (WCAG 1.4.10).**
     In a 320 px wide window, nothing scrolls sideways and no text is cut off.
   - **Text spacing (WCAG 1.4.12).**
@@ -65,10 +66,13 @@ Three kinds of check cover it, and the Test and Deploy workflows run the first t
   - **Reduced motion (WCAG 2.3.3, level AAA).**
     When the system asks for less motion, nothing animates.
   - **What a screen reader is given.**
-    The names, roles and states of everything on the page are compared with a snapshot in `e2e/accessibility.spec.ts-snapshots/`, so an unintended change fails.
-    After an intended one, update the snapshot with `npm run test:accessibility -- --update-snapshots` and review its diff.
+    The names, roles and states of everything on the page are compared with a snapshot in `e2e/accessibility.spec.ts-snapshots/`, so a control that is removed, renamed or changes role fails the check.
+    A new control does not: Playwright's snapshots allow extra elements.
+    After an intended change, delete the snapshot, run `npm run test:accessibility -- --update-snapshots` to write it afresh, and review its diff.
 - **Behaviour, in the component tests.**
-  `npm test` checks what a rule scanner cannot, for example: that the map works by keyboard (arrow keys, typing a code or name, Enter and Escape) and by touch (a tap inspects, a second tap selects); that it is a list box of areas, each named with its value; that zooming has button and keyboard alternatives to pinching and dragging; and that the selected and inspected outlines keep enough contrast against every map colour.
+  `npm test` checks what a rule scanner cannot, for example: that the map works by keyboard (arrow keys, typing a code or name, Enter and Escape) and by touch (a tap inspects, a second tap selects); that it is a list box of areas, each named with its value; that zooming has button and keyboard alternatives to pinching and dragging; that areas without data are hatched, not only grey; and that the selected and inspected outlines, the boundaries and the chart's bars keep enough contrast, in both themes.
+- **Colour vision, in the unit tests.**
+  `src/components/palette.test.ts` simulates protanopia, deuteranopia and tritanopia (Machado, Oliveira and Fernandes, 2009, as Chrome's own simulation does) and full colour blindness, and checks that in each theme the map's colour scale still reads in order by lightness alone, over a wide range.
 - **A person.**
   Automated checks find perhaps a third of accessibility problems.
   The rest need someone to try the site with a screen reader (NVDA or VoiceOver), with the keyboard alone, and on a touch screen, after any change to how it is used.
