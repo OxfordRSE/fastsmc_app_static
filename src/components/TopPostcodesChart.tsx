@@ -7,7 +7,7 @@ import { scaleBand, scaleLinear } from 'd3-scale'
 import { useCopy } from '../content/useCopy'
 import { useElementSize } from '../hooks/useElementSize'
 import type { Interval } from '../lib/postcodeData'
-import { darkest, hoveredColour } from './palette'
+import { darkest, inspectedColour } from './palette'
 
 const height = 200
 const margin = { top: 8, right: 8, bottom: 24, left: 48 }
@@ -29,12 +29,14 @@ export interface ChartEntry {
 export interface TopPostcodesChartProps {
   /** The bars, in order. */
   readonly entries: readonly ChartEntry[]
-  /** Code of the area under the pointer, whose bar is outlined like it is on the map, if any. */
-  readonly hovered: string | null
+  /** Code of the inspected area, whose bar is outlined like it is on the map, if any. */
+  readonly inspected: string | null
   /** Describes the chart for screen readers. */
   readonly label: string
   /** Called when the pointer moves onto a bar. */
-  readonly onHover: (code: string) => void
+  readonly onInspect: (code: string) => void
+  /** Called when the pointer leaves the chart. */
+  readonly onLeave: () => void
 }
 
 /**
@@ -45,9 +47,10 @@ export interface TopPostcodesChartProps {
  */
 export function TopPostcodesChart({
   entries,
-  hovered,
+  inspected,
   label,
-  onHover,
+  onInspect,
+  onLeave,
 }: TopPostcodesChartProps) {
   const copy = useCopy()
   const [ref, { width }] = useElementSize<HTMLDivElement>()
@@ -71,7 +74,13 @@ export function TopPostcodesChart({
 
   return (
     <div ref={ref} className="w-full">
-      <svg width={width} height={height} role="img" aria-label={label}>
+      <svg
+        width={width}
+        height={height}
+        role="img"
+        aria-label={label}
+        onMouseLeave={onLeave}
+      >
         <g
           transform={`translate(${String(margin.left)},${String(margin.top)})`}
         >
@@ -99,14 +108,14 @@ export function TopPostcodesChart({
           {entries.map(({ code, interval }) => {
             const left = x(code) ?? 0
             const centre = left + barWidth / 2
-            const isHovered = code === hovered
+            const isInspected = code === inspected
             return (
               <g
                 key={code}
                 data-code={code}
-                data-hovered={isHovered || undefined}
+                data-inspected={isInspected || undefined}
                 onMouseEnter={() => {
-                  onHover(code)
+                  onInspect(code)
                 }}
               >
                 {/* Full height and including the gaps, so short bars are easy to point at. */}
@@ -124,7 +133,7 @@ export function TopPostcodesChart({
                   height={y(0) - y(interval.mean)}
                   fill={darkest}
                   fillOpacity={0.5}
-                  stroke={isHovered ? hoveredColour : 'none'}
+                  stroke={isInspected ? inspectedColour : 'none'}
                   strokeWidth={2}
                 />
                 <g

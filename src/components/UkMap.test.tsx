@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { page, userEvent } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { en } from '../content/en'
-import { maxZoom, panStepPx, zoomStep } from '../lib/mapZoom'
+import type { Inspection } from '../lib/appState'
+import { maxZoom, zoomStep } from '../lib/mapZoom'
 import { indexOf } from '../lib/postcodeData'
+import { areasByCode } from '../lib/postcodeMap'
 import { UkMap, type UkMapProps } from './UkMap'
 
 function indexFor(postcode: string): number {
@@ -20,9 +23,10 @@ async function renderMap(props: Partial<UkMapProps> = {}, width = 400) {
         values={new Map()}
         range={{ low: 0, high: 1 }}
         selected="HA"
-        hovered={null}
+        inspected={null}
         onSelect={() => undefined}
-        onHover={() => undefined}
+        onInspect={() => undefined}
+        onClearInspection={() => undefined}
         {...props}
       />
     </div>,
@@ -77,29 +81,232 @@ describe('selection', () => {
   it('ignores clicks on an area without data', async () => {
     const onSelect = vi.fn()
     const { area } = await renderMap({ onSelect })
-    await area('CR').click()
+    // Forced: an area without data is marked disabled, which Playwright otherwise waits out.
+    await area('CR').click({ force: true })
     expect(onSelect).not.toHaveBeenCalled()
   })
 
   it('reports the area under the pointer', async () => {
-    const onHover = vi.fn()
-    const { area } = await renderMap({ onHover })
+    const onInspect = vi.fn()
+    const { area } = await renderMap({ onInspect })
     await area('LL').hover()
-    expect(onHover).toHaveBeenLastCalledWith('LL')
+    expect(onInspect).toHaveBeenLastCalledWith('LL', 'pointer')
+  })
+})
+
+// The map holding its own inspection, as the app does, so sequences of taps
+// and keys can be followed. Returns what was selected.
+async function renderStateful() {
+  const onSelect = vi.fn()
+  function StatefulMap() {
+    const [inspected, setInspected] = useState<Inspection | null>(null)
+    return (
+      <div style={{ width: 400, height: 600 }}>
+        <UkMap
+          values={new Map([[indexFor('B'), 46]])}
+          range={{ low: 0, high: 100 }}
+          selected="HA"
+          inspected={inspected}
+          onSelect={onSelect}
+          onInspect={(postcode, by) => {
+            setInspected({ postcode, by })
+          }}
+          onClearInspection={() => {
+            setInspected(null)
+          }}
+        />
+      </div>
+    )
+  }
+  const screen = await render(<StatefulMap />)
+  const svg = screen.container.querySelector('svg')
+  if (!svg) throw new Error('No map drawn')
+  const area = (code: string) => {
+    const element = svg.querySelector(`[data-code="${code}"]`)
+    if (!element) throw new Error(`No area ${code}`)
+    return element
+  }
+  await expect.element(page.elementLocator(area('HA'))).toHaveAttribute('d')
+  // The inspected area, from its outline, or null.
+  const inspected = () => {
+    const d = svg.querySelector('[data-outline="inspected"]')?.getAttribute('d')
+    if (d === undefined) return null
+    return (
+      [...areasByCode.keys()].find(
+        (code) => area(code).getAttribute('d') === d,
+      ) ?? null
+    )
+  }
+  return { screen, svg, area, inspected, onSelect }
+}
+
+// A tap, as a touch screen reports it: a touch pointer, then a click.
+function tap(target: Element) {
+  target.dispatchEvent(
+    new PointerEvent('pointerdown', { pointerType: 'touch', bubbles: true }),
+  )
+  target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+}
+
+describe('touch', () => {
+  it('inspects an area with a first tap and selects it with a second', async () => {
+    const { area, inspected, onSelect } = await renderStateful()
+    tap(area('B'))
+    await expect.poll(inspected).toBe('B')
+    expect(onSelect).not.toHaveBeenCalled()
+    tap(area('B'))
+    expect(onSelect).toHaveBeenCalledExactlyOnceWith('B')
+  })
+
+  it('inspects an area without data, but never selects it', async () => {
+    const { area, inspected, onSelect } = await renderStateful()
+    tap(area('CR'))
+    await expect.poll(inspected).toBe('CR')
+    tap(area('CR'))
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('stops inspecting with a tap on the sea', async () => {
+    const { svg, area, inspected } = await renderStateful()
+    tap(area('B'))
+    await expect.poll(inspected).toBe('B')
+    tap(svg)
+    await expect.poll(inspected).toBeNull()
+  })
+})
+
+describe('mouse', () => {
+  it('stops inspecting when the pointer leaves the map', async () => {
+    const { area, inspected } = await renderStateful()
+    await page.elementLocator(area('B')).hover()
+    await expect.poll(inspected).toBe('B')
+    await page.getByRole('button', { name: en.map.zoomIn }).hover()
+    await expect.poll(inspected).toBeNull()
+  })
+
+  it('never selects an area at the end of a drag', async () => {
+    const { svg, area, onSelect } = await renderStateful()
+    await page.getByRole('button', { name: en.map.zoomIn }).click()
+    const target = area('B')
+    const { left, top } = target.getBoundingClientRect()
+    const at = (dx: number) => ({
+      clientX: left + 5 + dx,
+      clientY: top + 5,
+      bubbles: true,
+      view: window,
+    })
+    target.dispatchEvent(new MouseEvent('mousedown', at(0)))
+    window.dispatchEvent(new MouseEvent('mousemove', at(40)))
+    window.dispatchEvent(new MouseEvent('mouseup', at(40)))
+    target.dispatchEvent(new MouseEvent('click', at(40)))
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(svg.querySelector(':scope > g')?.getAttribute('transform')).toMatch(
+      /^translate/,
+    )
+  })
+})
+
+describe('keyboard', () => {
+  async function focusMap() {
+    const rendered = await renderStateful()
+    await userEvent.tab()
+    expect(document.activeElement).toBe(rendered.svg)
+    return rendered
+  }
+
+  const centreX = (element: Element) => {
+    const { x, width } = (element as SVGGraphicsElement).getBBox()
+    return x + width / 2
+  }
+
+  it('starts at the selected area when tabbed to', async () => {
+    const { svg, area, inspected } = await focusMap()
+    await expect.poll(inspected).toBe('HA')
+    expect(svg.getAttribute('aria-activedescendant')).toBe(area('HA').id)
+  })
+
+  it('moves to a neighbouring area with the arrow keys', async () => {
+    const { area, inspected } = await focusMap()
+    await userEvent.keyboard('{ArrowRight}')
+    await expect.poll(inspected).not.toBe('HA')
+    const next = inspected()
+    if (next === null) throw new Error('Nothing inspected')
+    expect(centreX(area(next))).toBeGreaterThan(centreX(area('HA')))
+  })
+
+  it('jumps to an area by typing its code or the start of its name', async () => {
+    const { inspected } = await focusMap()
+    await userEvent.keyboard('ec')
+    await expect.poll(inspected).toBe('EC')
+    await new Promise((resolve) => setTimeout(resolve, 1100))
+    await userEvent.keyboard('birm')
+    await expect.poll(inspected).toBe('B')
+  })
+
+  it('selects with Enter and stops with Escape', async () => {
+    const { inspected, onSelect } = await focusMap()
+    await userEvent.keyboard('ec')
+    await expect.poll(inspected).toBe('EC')
+    await userEvent.keyboard('{Enter}')
+    expect(onSelect).toHaveBeenCalledExactlyOnceWith('EC')
+    await userEvent.keyboard('{Escape}')
+    await expect.poll(inspected).toBeNull()
+  })
+
+  it('stops inspecting when focus leaves the map', async () => {
+    const { inspected } = await focusMap()
+    await expect.poll(inspected).toBe('HA')
+    await userEvent.tab()
+    await expect.poll(inspected).toBeNull()
+  })
+})
+
+describe('for screen readers', () => {
+  it('is a list box of every area, named, with the selected one marked', async () => {
+    const { screen } = await renderStateful()
+    const listbox = page.getByRole('listbox', { name: en.map.label })
+    await expect.element(listbox).toBeVisible()
+    expect(screen.container.querySelectorAll('[role="option"]')).toHaveLength(
+      120,
+    )
+    await expect
+      .element(
+        listbox.getByRole('option', {
+          name: en.map.option(en.controls.area('Birmingham', 'B'), '46%'),
+        }),
+      )
+      .toBeInTheDocument()
+    await expect
+      .element(
+        listbox.getByRole('option', {
+          name: en.map.optionNoData(en.controls.area('Croydon', 'CR')),
+        }),
+      )
+      .toHaveAttribute('aria-disabled', 'true')
+    await expect
+      .element(listbox.getByRole('option', { selected: true }))
+      .toHaveAttribute('data-code', 'HA')
   })
 })
 
 describe('outlines', () => {
-  it('outlines the selected and hovered areas', async () => {
-    const { area, outline } = await renderMap({ selected: 'B', hovered: 'LL' })
+  it('outlines the selected and inspected areas', async () => {
+    const { area, outline } = await renderMap({
+      selected: 'B',
+      inspected: { postcode: 'LL', by: 'pointer' },
+    })
     const shapeOf = (code: string) => area(code).element().getAttribute('d')
     await expect.element(outline('selected')).toHaveAttribute('d', shapeOf('B'))
-    await expect.element(outline('hovered')).toHaveAttribute('d', shapeOf('LL'))
+    await expect
+      .element(outline('inspected'))
+      .toHaveAttribute('d', shapeOf('LL'))
   })
 
   it('draws a wider halo under each outline', async () => {
-    const { screen } = await renderMap({ hovered: 'LL' })
-    for (const kind of ['selected', 'hovered']) {
+    const { screen } = await renderMap({
+      inspected: { postcode: 'LL', by: 'pointer' },
+    })
+    for (const kind of ['selected', 'inspected']) {
       const line = screen.container.querySelector(`[data-outline="${kind}"]`)
       const halo = screen.container.querySelector(`[data-halo="${kind}"]`)
       expect(halo?.getAttribute('d')).toBe(line?.getAttribute('d'))
@@ -109,10 +316,10 @@ describe('outlines', () => {
     }
   })
 
-  it('draws no hover outline when nothing is hovered', async () => {
+  it('draws no hover outline when nothing is inspected', async () => {
     const { screen } = await renderMap()
     expect(
-      screen.container.querySelectorAll('[data-outline="hovered"]'),
+      screen.container.querySelectorAll('[data-outline="inspected"]'),
     ).toHaveLength(0)
   })
 })
@@ -185,23 +392,37 @@ describe('zoom', () => {
     expect(zoom()).toEqual({ x: 0, y: 0, k: 1 })
   })
 
-  it('zooms and pans with the keyboard', async () => {
+  it('zooms with the keyboard', async () => {
     const { svg, zoom } = await renderZoomable()
     svg.focus()
     await userEvent.keyboard('+')
     expect(zoom().k).toBe(zoomStep)
-    const before = zoom()
-    await userEvent.keyboard('{ArrowRight}')
-    expect(zoom().x).toBe(before.x - panStepPx)
-    await userEvent.keyboard('0')
+    await userEvent.keyboard('-')
+    expect(zoom().k).toBe(1)
+    await userEvent.keyboard('++0')
     expect(zoom()).toEqual({ x: 0, y: 0, k: 1 })
   })
 
-  it('never pans beyond the whole map', async () => {
-    const { svg, zoom } = await renderZoomable()
-    svg.focus()
-    await userEvent.keyboard('{ArrowLeft}{ArrowUp}')
+  it('pans with a drag once zoomed in, but never beyond the whole map', async () => {
+    const { svg, zoom, button } = await renderZoomable()
+    const { left, top } = svg.getBoundingClientRect()
+    const drag = (dx: number) => {
+      const at = (by: number) => ({
+        clientX: left + 200 + by,
+        clientY: top + 300,
+        bubbles: true,
+        view: window,
+      })
+      svg.dispatchEvent(new MouseEvent('mousedown', at(0)))
+      window.dispatchEvent(new MouseEvent('mousemove', at(dx)))
+      window.dispatchEvent(new MouseEvent('mouseup', at(dx)))
+    }
+    drag(100)
     expect(zoom()).toEqual({ x: 0, y: 0, k: 1 })
+    await button(en.map.zoomIn).click()
+    const before = zoom().x
+    drag(50)
+    await expect.poll(() => zoom().x).toBe(before + 50)
   })
 
   it('zooms in with the mouse wheel', async () => {
@@ -242,9 +463,10 @@ describe('zoom', () => {
           values={new Map()}
           range={{ low: 0, high: 1 }}
           selected="ZE"
-          hovered={null}
+          inspected={null}
           onSelect={() => undefined}
-          onHover={() => undefined}
+          onInspect={() => undefined}
+          onClearInspection={() => undefined}
         />
       </div>,
     )

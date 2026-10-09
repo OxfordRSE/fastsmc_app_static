@@ -1,3 +1,4 @@
+// Local edit: a triggerLabel prop on ComboboxInput names the icon-only button that opens the list.
 "use client"
 
 import * as React from "react"
@@ -55,10 +56,12 @@ function ComboboxInput({
   disabled = false,
   showTrigger = true,
   showClear = false,
+  triggerLabel,
   ...props
 }: ComboboxPrimitive.Input.Props & {
   showTrigger?: boolean
   showClear?: boolean
+  triggerLabel?: string
 }) {
   return (
     <InputGroup className={cn("w-auto", className)}>
@@ -75,6 +78,7 @@ function ComboboxInput({
             data-slot="input-group-button"
             className="group-has-data-[slot=combobox-clear]/input-group:hidden data-pressed:bg-transparent"
             disabled={disabled}
+            aria-label={triggerLabel}
           />
         )}
         {showClear && <ComboboxClear disabled={disabled} />}

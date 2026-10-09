@@ -21,7 +21,7 @@ npm ci
 npm run dev
 ```
 
-The component tests and the smoke test run in Chromium, which Playwright downloads separately.
+The component tests, the smoke test and the accessibility checks run in Chromium, which Playwright downloads separately.
 Install it once, and again after Playwright is upgraded:
 
 ```bash
@@ -30,18 +30,35 @@ npx playwright install chromium
 
 ## Commands
 
-| Command                | Purpose                                      |
-| ---------------------- | -------------------------------------------- |
-| `npm run dev`          | Start the development server with hot reload |
-| `npm run build`        | Type-check and build into `dist/`            |
-| `npm run preview`      | Serve the built site locally                 |
-| `npm run typecheck`    | Type-check without building                  |
-| `npm run lint`         | Run ESLint                                   |
-| `npm run format`       | Format with Prettier                         |
-| `npm run format:check` | Check formatting without writing             |
-| `npm test`             | Run the unit and component tests once        |
-| `npm run test:watch`   | Run the unit and component tests on change   |
-| `npm run test:e2e`     | Build the site and smoke-test it in Chromium |
+| Command                      | Purpose                                                            |
+| ---------------------------- | ------------------------------------------------------------------ |
+| `npm run dev`                | Start the development server with hot reload                       |
+| `npm run build`              | Type-check and build into `dist/`                                  |
+| `npm run preview`            | Serve the built site locally                                       |
+| `npm run typecheck`          | Type-check without building                                        |
+| `npm run lint`               | Run ESLint                                                         |
+| `npm run format`             | Format with Prettier                                               |
+| `npm run format:check`       | Check formatting without writing                                   |
+| `npm test`                   | Run the unit and component tests once                              |
+| `npm run test:watch`         | Run the unit and component tests on change                         |
+| `npm run test:smoke`         | Build the site and smoke-test it in Chromium                       |
+| `npm run test:accessibility` | Build the site and check it for accessibility problems (see below) |
+
+## Accessibility
+
+The site aims to meet [WCAG 2.2](https://www.w3.org/TR/WCAG22/) at level AA.
+Three kinds of check cover it, and the Test and Deploy workflows run the first two on every change.
+
+- **Automated rules.**
+  `npm run test:accessibility` (`e2e/accessibility.spec.ts`) scans the built site with [axe-core](https://github.com/dequelabs/axe-core), in Chromium.
+  It applies every axe-core rule tagged for WCAG 2.0, 2.1 and 2.2 at levels A and AA (`wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`), such as colour contrast, names for buttons and form fields, valid ARIA, and scrolling regions that the keyboard can reach.
+  It scans six states: the page as it opens, the map in keyboard use while zoomed in, the advanced settings, and each of the three dialogs.
+  Rules that are best practice rather than WCAG requirements are not applied.
+- **Behaviour, in the component tests.**
+  `npm test` checks what a rule scanner cannot, for example: that the map works by keyboard (arrow keys, typing a code or name, Enter and Escape) and by touch (a tap inspects, a second tap selects); that it is a list box of areas, each named with its value; that zooming has button and keyboard alternatives to pinching and dragging; and that the selected and inspected outlines keep enough contrast against every map colour.
+- **A person.**
+  Automated checks find perhaps a third of accessibility problems.
+  The rest need someone to try the site with a screen reader (NVDA or VoiceOver), with the keyboard alone, and on a touch screen, after any change to how it is used.
 
 ## Data
 

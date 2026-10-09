@@ -24,7 +24,7 @@ export const selectedColour = '#e69f00'
 export const selectedHalo = 'black'
 
 /** Marks the area under the pointer. */
-export const hoveredColour = 'black'
+export const inspectedColour = 'black'
 
-/** Drawn under the hovered area's outline, so it shows against dark blue fills. */
-export const hoveredHalo = 'white'
+/** Drawn under the inspected area's outline, so it shows against dark blue fills. */
+export const inspectedHalo = 'white'

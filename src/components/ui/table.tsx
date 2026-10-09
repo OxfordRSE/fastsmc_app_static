@@ -1,16 +1,22 @@
-// Local edit: a containerClassName prop, so the container can scroll both ways and keep a sticky header in view.
+// Local edit: a containerProps prop, so the container can scroll both ways, keep a sticky header in view, and be reached by keyboard.
 import * as React from "react"
 import { cn } from "cn"
 
 function Table({
   className,
-  containerClassName,
+  containerProps,
   ...props
-}: React.ComponentProps<"table"> & { containerClassName?: string }) {
+}: React.ComponentProps<"table"> & {
+  containerProps?: React.ComponentProps<"div">
+}) {
   return (
     <div
       data-slot="table-container"
-      className={cn("relative w-full overflow-x-auto", containerClassName)}
+      {...containerProps}
+      className={cn(
+        "relative w-full overflow-x-auto",
+        containerProps?.className
+      )}
     >
       <table
         data-slot="table"

@@ -54,6 +54,8 @@ export interface Copy {
     readonly postcodeDescription: string
     /** Shown in the empty postcode entry. */
     readonly postcodePlaceholder: string
+    /** Name of the button that opens the list of postcode areas, for screen readers. */
+    readonly postcodeList: string
     /** Shown when no area matches what was typed. */
     readonly noMatch: string
     /** An area in the postcode list, such as "Birmingham (B)". */
@@ -103,22 +105,26 @@ export interface Copy {
      * The link with the area under the pointer.
      *
      * @param selected - The selected area's place name.
-     * @param other - The hovered area's name and code.
+     * @param other - The inspected area's name and code.
      * @param percent - The link as a percentage of the selected area's link with itself.
      * @param rank - Its rank among the other areas, 1 for the most related.
      * @param of - How many other areas there are.
      */
-    readonly hoveredLink: (
+    readonly inspectedLink: (
       selected: string,
       other: string,
       percent: string,
       rank: number,
       of: number,
     ) => string
-    /** Shown for a hovered area without data, given its name and code. */
-    readonly hoveredNoData: (other: string) => string
-    /** Shown until the pointer has been over an area. */
-    readonly hoverPrompt: string
+    /** Shown for an inspected area without data, given its name and code. */
+    readonly inspectedNoData: (other: string) => string
+    /** Shown until an area other than the selected one is inspected. */
+    readonly inspectPrompt: string
+    /** Text of the button that selects the area inspected by a tap. */
+    readonly select: string
+    /** That button's full name for screen readers, given the area's name and code. */
+    readonly selectLabel: (area: string) => string
     /** Heading of the chart. */
     readonly topAreas: string
     /** States the unit of the chart, given the selected area's place name. */
@@ -170,10 +176,14 @@ export interface Copy {
   }
   /** The map itself, for screen readers, and its zoom controls. */
   readonly map: {
-    /** Names the map, which takes keyboard focus for zooming and panning. */
+    /** Names the map, a list of areas to move through with the keyboard. */
     readonly label: string
     /** Describes the map's keys, for screen readers. */
     readonly keys: string
+    /** An area as a screen reader announces it, given its name and code and its percentage. */
+    readonly option: (area: string, percent: string) => string
+    /** An area without data, as a screen reader announces it. */
+    readonly optionNoData: (area: string) => string
     /** Label of the zoom-in button. */
     readonly zoomIn: string
     /** Label of the zoom-out button. */
@@ -308,6 +318,7 @@ export const en: Copy = {
     postcode: 'Postcode area',
     postcodeDescription: 'Type an area code, such as S or HA, or a place name.',
     postcodePlaceholder: 'Enter postcode...',
+    postcodeList: 'Show all postcode areas',
     noMatch: 'No matching area.',
     area: (name, code) => `${name} (${code})`,
     areaWithoutData: (name, code) => `${name} (${code}): no data`,
@@ -329,11 +340,13 @@ export const en: Copy = {
   details: {
     topLink: (selected, other, share) =>
       `Most related: ${other}, at ${share} of ${selected}'s link with itself.`,
-    hoveredLink: (selected, other, share, rank, of) =>
+    inspectedLink: (selected, other, share, rank, of) =>
       `${other}: ${share} of ${selected}'s link with itself, the ${ordinal(rank)} most related of ${String(of)}.`,
-    hoveredNoData: (other) => `${other}: no data.`,
-    hoverPrompt:
-      'Point at an area on the map, or a bar in the chart, to compare it with the selected area.',
+    inspectedNoData: (other) => `${other}: no data.`,
+    inspectPrompt:
+      'Point at or tap an area on the map, or a bar in the chart, to compare it with the selected area.',
+    select: 'Select',
+    selectLabel: (area) => `Select ${area}`,
     topAreas: 'Top 10 most related areas',
     chartUnit: (selected) =>
       `As a percentage of ${selected}'s link with itself.`,
@@ -369,7 +382,13 @@ export const en: Copy = {
 
   map: {
     label: 'Map of UK postcode areas',
-    keys: 'Zoom with plus and minus, pan with the arrow keys, and press 0 to see the whole map.',
+    keys: sentences(
+      "Move between areas with the arrow keys, or type the start of an area's code or name to jump to it.",
+      'Press Enter to select an area, and Escape to stop comparing.',
+      'Zoom with plus and minus, and press 0 to see the whole map.',
+    ),
+    option: (area, share) => `${area}, ${share}`,
+    optionNoData: (area) => `${area}, no data`,
     zoomIn: 'Zoom in',
     zoomOut: 'Zoom out',
     resetZoom: 'Show the whole map',
@@ -389,7 +408,9 @@ export const en: Copy = {
       'The map shows genetic relationships between UK postcode areas, measured by identity-by-descent (IBD) over the past 300 to 1,500 years, depending on the "Time threshold".',
       'The intensity of the colour reflects how closely related the selected area, outlined in orange, is to every other area.',
       'Areas shown in grey have too little data for this analysis.',
-      'Move the mouse over an area to outline it in black.',
+      'Point at or tap an area to outline it in black and compare it; click it, or tap it again, to select it.',
+      'With a keyboard, move to the map and use the arrow keys.',
+      'Zoom in with the buttons on the map, the mouse wheel, or by pinching.',
       'More detail appears in the box below the controls.',
       'Use "Show advanced" to reveal additional settings.',
     ),

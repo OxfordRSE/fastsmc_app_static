@@ -14,9 +14,6 @@ export const targetSizePx = 44
 /** The factor by which each zoom button or key press zooms in or out. */
 export const zoomStep = 2
 
-/** How far, in pixels, each arrow key press pans the map. */
-export const panStepPx = 100
-
 /**
  * The most the map may be zoomed in: just enough for the smallest area to be
  * easy to see and select.
@@ -45,15 +42,19 @@ export interface ZoomState {
 }
 
 /**
- * Whether a box drawn on the map lies wholly within the visible part of it.
+ * Whether a box drawn on the map lies wholly outside the visible part of it.
+ *
+ * @remarks
+ * The map brings an area into view only when none of it shows, so that
+ * choosing an area half off the edge does not make the map jump.
  *
  * @param bounds - The box in the default view: [[left, top], [right, bottom]].
  * @param transform - The current zoom.
  * @param width - Width of the map's box, in pixels.
  * @param height - Height of the map's box, in pixels.
- * @returns `true` if none of the box is outside the view.
+ * @returns `true` if none of the box is in view.
  */
-export function isInView(
+export function isOutOfView(
   bounds: readonly [readonly [number, number], readonly [number, number]],
   transform: ZoomState,
   width: number,
@@ -62,9 +63,9 @@ export function isInView(
   const [[left, top], [right, bottom]] = bounds
   const { k, x, y } = transform
   return (
-    k * left + x >= 0 &&
-    k * top + y >= 0 &&
-    k * right + x <= width &&
-    k * bottom + y <= height
+    k * right + x <= 0 ||
+    k * bottom + y <= 0 ||
+    k * left + x >= width ||
+    k * top + y >= height
   )
 }

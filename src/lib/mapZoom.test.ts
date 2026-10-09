@@ -1,7 +1,7 @@
 import { geoPath } from 'd3-geo'
 import { describe, expect, it } from 'vitest'
 import { mapProjection } from './mapLayout'
-import { isInView, maxZoom, targetSizePx } from './mapZoom'
+import { isOutOfView, maxZoom, targetSizePx } from './mapZoom'
 import { postcodeAreas } from './postcodeMap'
 
 describe('maxZoom', () => {
@@ -29,19 +29,20 @@ describe('maxZoom', () => {
   })
 })
 
-describe('isInView', () => {
+describe('isOutOfView', () => {
   const box = [
     [100, 100],
     [200, 200],
   ] as const
 
   it.each([
-    ['in the default view', { k: 1, x: 0, y: 0 }, true],
-    ['zoomed in, still on screen', { k: 2, x: -100, y: -100 }, true],
-    ['zoomed in, off to the right', { k: 4, x: 0, y: 0 }, false],
-    ['panned so it is off the left', { k: 2, x: -250, y: 0 }, false],
-    ['partly off the bottom', { k: 1, x: 0, y: 450 }, false],
+    ['in the default view', { k: 1, x: 0, y: 0 }, false],
+    ['zoomed in, still on screen', { k: 2, x: -100, y: -100 }, false],
+    ['partly off the bottom', { k: 1, x: 0, y: 350 }, false],
+    ['zoomed in, off to the right', { k: 6, x: 0, y: 0 }, true],
+    ['panned off the left', { k: 2, x: -450, y: 0 }, true],
+    ['panned off the top', { k: 1, x: 0, y: -200 }, true],
   ])('is %s', (_, transform, expected) => {
-    expect(isInView(box, transform, 500, 500)).toBe(expected)
+    expect(isOutOfView(box, transform, 500, 500)).toBe(expected)
   })
 })

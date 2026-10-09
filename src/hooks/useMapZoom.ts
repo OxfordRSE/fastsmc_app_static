@@ -33,8 +33,6 @@ export interface MapZoom {
   readonly zoomBy: (factor: number) => void
   /** Returns to the whole map. */
   readonly reset: () => void
-  /** Moves the view by a distance on screen, in pixels. */
-  readonly panBy: (dx: number, dy: number) => void
   /** Moves the view to centre a point of the unzoomed map, keeping the zoom. */
   readonly centreOn: (x: number, y: number) => void
 }
@@ -105,13 +103,6 @@ export function useMapZoom(
       reset: () => {
         act((svg) => {
           behaviour.transform(select(svg), zoomIdentity)
-        })
-      },
-      // translateBy moves in unzoomed units, so divide by the zoom.
-      panBy: (dx: number, dy: number) => {
-        act((svg) => {
-          const { k } = zoomTransform(svg)
-          behaviour.translateBy(select(svg), dx / k, dy / k)
         })
       },
       centreOn: (x: number, y: number) => {

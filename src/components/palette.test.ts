@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   darkest,
-  hoveredColour,
-  hoveredHalo,
+  inspectedColour,
+  inspectedHalo,
   lightest,
   selectedColour,
   selectedHalo,
@@ -45,19 +45,19 @@ function contrast(a: string, b: string): number {
 // WCAG 2.2 success criterion 1.4.11, non-text contrast: at least 3:1.
 const minimum = 3
 
-describe('the selected and hovered marks stand out against every fill', () => {
+describe('the selected and inspected marks stand out against every fill', () => {
   it.each([
     ['selected outline', 'the darkest fill', selectedColour, darkest],
     ['selected halo', 'the lightest fill', selectedHalo, lightest],
-    ['hovered outline', 'the lightest fill', hoveredColour, lightest],
-    ['hovered halo', 'the darkest fill', hoveredHalo, darkest],
+    ['inspected outline', 'the lightest fill', inspectedColour, lightest],
+    ['inspected halo', 'the darkest fill', inspectedHalo, darkest],
   ])('%s against %s', (_, __, mark, fill) => {
     expect(contrast(mark, fill)).toBeGreaterThanOrEqual(minimum)
   })
 })
 
-it('distinguishes the selected and hovered marks by lightness, not only hue', () => {
-  expect(contrast(selectedColour, hoveredColour)).toBeGreaterThanOrEqual(
+it('distinguishes the selected and inspected marks by lightness, not only hue', () => {
+  expect(contrast(selectedColour, inspectedColour)).toBeGreaterThanOrEqual(
     minimum,
   )
 })
