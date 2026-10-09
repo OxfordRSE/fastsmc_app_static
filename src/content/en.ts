@@ -168,6 +168,19 @@ export interface Copy {
     /** Shown across the value columns of an area without data. */
     readonly noData: string
   }
+  /** The map itself, for screen readers, and its zoom controls. */
+  readonly map: {
+    /** Names the map, which takes keyboard focus for zooming and panning. */
+    readonly label: string
+    /** Describes the map's keys, for screen readers. */
+    readonly keys: string
+    /** Label of the zoom-in button. */
+    readonly zoomIn: string
+    /** Label of the zoom-out button. */
+    readonly zoomOut: string
+    /** Label of the button that returns to the whole map. */
+    readonly resetZoom: string
+  }
   /** The map's colour legend. */
   readonly legend: {
     /** Says what the colours show, given the selected area's place name. */
@@ -352,6 +365,14 @@ export const en: Copy = {
       `${asTablePercent(lower)}–${asTablePercent(upper)}`,
     value: (mean) => value.format(mean),
     noData: 'no data',
+  },
+
+  map: {
+    label: 'Map of UK postcode areas',
+    keys: 'Zoom with plus and minus, pan with the arrow keys, and press 0 to see the whole map.',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    resetZoom: 'Show the whole map',
   },
 
   legend: {
